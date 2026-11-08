@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="{{url_for('static', filename='media/home_icon.png')}}" type="image/x-icon">
+    <title>Home</title>
+    <!-- Import Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+    <!-- jquery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <!-- url_for usage. Some servers don't allow actual path type import. -->
+    <!-- Custom CSS -->
+    <!-- <link href="{{url_for('static', filename='css/custom_css.css')}}" rel="stylesheet"> -->
+    <!-- XLSX library -->
+    <!-- <script lang="javascript" src="{{url_for('static', filename='js/node_modules/xlsx/dist/xlsx.full.min.js')}}"></script> -->
+    <!-- Custom JS -->
+    <!-- <script src="{{url_for('static', filename='js/custom_js.js')}}"></script> -->
+
+    <!-- using actual path type import. More intuitive -->
+    <!-- Custom CSS -->
+    <link href="/static/css/custom_css.css" rel="stylesheet">
+    <!-- XLSX library -->
+    <script lang="javascript" src="/static/js/xlsx.full.min.js"></script>
+    <!-- Custom JS -->
+    <script type="module">
+        import { sayHi, movePopup, disappearPopup } from "/static/js/child.js";
+        $(document).ready(function() {
+        // add event listener to make customPopup disappear
+        sayHi('Sandipto') // user='Sandipto' will result in error. No keyworded arguments allowed
+        document.addEventListener('mousemove', movePopup)
+        document.addEventListener('click', disappearPopup)  
+    })
+    </script>
+    <script src="/static/js/custom_js.js"></script>
+    
+</head>
+
+<body>
+    <div style="margin-top: 2%; align-items: center; width:100vw; justify-content: center; display: flex;">
+        <h1>Sample Flask Project</h1>
+    </div>
+    <div style="margin-top: 2%; align-items: center; width:100vw; justify-content: center; display: flex;">
+        <p>This is a sample Flask project to show the working of Flask with UI rendering.</p>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <button type="button" class="btn btn btn-primary" onclick="downloadExcel()">Download Excel</button>
+            </div>
+            <div class="col">
+                <button type="button" class="btn btn btn-primary" onclick="downloadCSV()">Download CSV</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- custom Popup -->
+    <div id="customPopup" class="customPopup"></div>
+</body>
+
+</html>

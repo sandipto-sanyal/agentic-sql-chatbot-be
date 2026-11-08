@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Chat Room Demo</title>
+    <style>
+      body { font-family: sans-serif; margin: 2rem; }
+      #log { border: 1px solid #ccc; padding: 1rem; height: 200px; overflow-y: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>WebSocket Chat Room</h1>
+    <input id="room" placeholder="Room name" />
+    <button id="join">Join Room</button>
+    <div id="log"></div>
+    <input id="msg" placeholder="Type message" />
+    <button id="send">Send</button>
+
+    <script>
+      let ws;
+      const log = document.getElementById('log');
+
+      function addLine(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      document.getElementById('join').onclick = () => {
+        const room = document.getElementById('room').value;
+        ws = new WebSocket(`ws://${location.host}/ws`);
+        ws.onopen = () => ws.send("JOIN " + room);
+        ws.onmessage = (ev) => addLine(ev.data);
+        ws.onclose = () => addLine("Disconnected.");
+      };
+
+      document.getElementById('send').onclick = () => {
+        const msg = document.getElementById('msg').value;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(msg);
+        }
+      };
+    </script>
+  </body>
+</html>
