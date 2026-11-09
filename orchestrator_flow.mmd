@@ -1,0 +1,6 @@
+flowchart TD
+    A["user_task"] --> B["get_database_schema"]
+    A --> |user_task| C["simplify_query"]
+    B --> |schema| C
+    C --> |query|D["query_runner"]
+    D --> |records|E["markdown_formatter"]

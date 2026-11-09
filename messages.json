@@ -1,0 +1,34 @@
+[
+    [
+        "system",
+        "You are an orchestrator that has access to specialized agents.\nAny query related to employees table: always use as per following flow logic.\nflowchart TD\n    A[\"user_task\"] --> B[\"get_database_schema\"]\n    A --> |user_task| C[\"simplify_query\"]\n    B --> |schema| C\n    C --> |query|D[\"query_runner\"]\n    D --> |records|E[\"markdown_formatter\"]\nFor any other query answer directly from your knowledge"
+    ],
+    [
+        "human",
+        "Department wise Average Salaries"
+    ],
+    [
+        "ai",
+        ""
+    ],
+    [
+        "tool",
+        "CREATE TABLE `departments` (\n  `dept_no` char(4) NOT NULL,\n  `dept_name` varchar(40) NOT NULL,\n  PRIMARY KEY (`dept_no`),\n  UNIQUE KEY `dept_name` (`dept_name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `dept_emp` (\n  `emp_no` int NOT NULL,\n  `dept_no` char(4) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`dept_no`),\n  KEY `dept_no` (`dept_no`),\n  CONSTRAINT `dept_emp_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE,\n  CONSTRAINT `dept_emp_ibfk_2` FOREIGN KEY (`dept_no`) REFERENCES `departments` (`dept_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `dept_manager` (\n  `emp_no` int NOT NULL,\n  `dept_no` char(4) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`dept_no`),\n  KEY `dept_no` (`dept_no`),\n  CONSTRAINT `dept_manager_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE,\n  CONSTRAINT `dept_manager_ibfk_2` FOREIGN KEY (`dept_no`) REFERENCES `departments` (`dept_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `employees` (\n  `emp_no` int NOT NULL,\n  `birth_date` date NOT NULL,\n  `first_name` varchar(14) NOT NULL,\n  `last_name` varchar(16) NOT NULL,\n  `gender` enum('M','F') NOT NULL,\n  `hire_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `salaries` (\n  `emp_no` int NOT NULL,\n  `salary` int NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`from_date`),\n  CONSTRAINT `salaries_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `titles` (\n  `emp_no` int NOT NULL,\n  `title` varchar(50) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date DEFAULT NULL,\n  PRIMARY KEY (`emp_no`,`title`,`from_date`),\n  CONSTRAINT `titles_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    ],
+    [
+        "tool",
+        "You can simplify the given query using Common Table Expressions (CTEs) as follows:\n\n```sql\nWITH DepartmentSalaries AS (\n    SELECT department, salary\n    FROM employees\n)\n\nSELECT department, AVG(salary) AS average_salary\nFROM DepartmentSalaries\nGROUP BY department;\n```\n\nIn this simplified version, the CTE `DepartmentSalaries` retrieves the department and salary from the `employees` table. The main query then calculates the average salary for each department based on this CTE."
+    ],
+    [
+        "ai",
+        ""
+    ],
+    [
+        "tool",
+        "| department         |   average_salary |\n|:-------------------|-----------------:|\n| Customer Service   |          58770.4 |\n| Development        |          59478.9 |\n| Finance            |          70489.4 |\n| Human Resources    |          55574.9 |\n| Marketing          |          71913.2 |\n| Production         |          59605.5 |\n| Quality Management |          57251.3 |\n| Research           |          59665.2 |\n| Sales              |          80667.6 |"
+    ],
+    [
+        "ai",
+        "Here are the average salaries department-wise:\n\n| Department         | Average Salary |\n|:-------------------|----------------:|\n| Customer Service   |          58,770.4 |\n| Development        |          59,478.9 |\n| Finance            |          70,489.4 |\n| Human Resources    |          55,574.9 |\n| Marketing          |          71,913.2 |\n| Production         |          59,605.5 |\n| Quality Management |          57,251.3 |\n| Research           |          59,665.2 |\n| Sales              |          80,667.6 |"
+    ]
+]

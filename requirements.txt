@@ -12,3 +12,4 @@ pandas
 plotly
 ipykernel
 nbformat
+tabulate

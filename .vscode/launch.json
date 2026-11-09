@@ -1,0 +1,24 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: employee_agentic_chatbot.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/employee_agentic_chatbot.py",
+            "console": "integratedTerminal",
+            "python": "C:\\Users\\sandi\\python_venvs\\python313\\Scripts\\python.exe",            
+        },
+        {
+            "name": "Python Debugger: app.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/app.py",
+            "console": "integratedTerminal",
+            "python": "C:\\Users\\sandi\\python_venvs\\python313\\Scripts\\python.exe",            
+        }
+    ]
+}
