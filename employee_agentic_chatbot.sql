@@ -302,3 +302,65 @@ WITH DepartmentSalaries AS (
 SELECT department, AVG(salary) AS average_salary
 FROM DepartmentSalaries
 GROUP BY department;
+
+-- 2026-11-09 19:45:08
+WITH DepartmentSalaries AS (
+    SELECT d.dept_name AS department, s.salary
+    FROM dept_emp de
+    JOIN departments d ON de.dept_no = d.dept_no
+    JOIN salaries s ON de.emp_no = s.emp_no
+)
+
+SELECT department, AVG(salary) AS average_salary
+FROM DepartmentSalaries
+GROUP BY department;
+
+-- 2026-11-09 19:48:03
+SELECT d.dept_name, AVG(s.salary) as average_salary 
+FROM departments d 
+JOIN dept_emp de ON d.dept_no = de.dept_no 
+JOIN salaries s ON de.emp_no = s.emp_no 
+GROUP BY d.dept_name;
+
+-- 2026-11-09 19:50:25
+WITH DepartmentSalaries AS (
+    SELECT d.dept_name AS department, s.salary
+    FROM dept_emp de
+    JOIN departments d ON de.dept_no = d.dept_no
+    JOIN salaries s ON de.emp_no = s.emp_no
+)
+
+SELECT department, AVG(salary) AS average_salary
+FROM DepartmentSalaries
+GROUP BY department;
+
+-- 2026-11-09 19:52:42
+WITH DepartmentSalaries AS (
+    SELECT d.dept_name AS department, s.salary
+    FROM dept_emp de
+    JOIN departments d ON de.dept_no = d.dept_no
+    JOIN salaries s ON de.emp_no = s.emp_no
+)
+SELECT department, AVG(salary) AS average_salary
+FROM DepartmentSalaries
+GROUP BY department;
+
+-- 2026-11-09 20:01:14
+SELECT d.dept_name, AVG(s.salary) as average_salary 
+FROM salaries s 
+JOIN dept_emp de ON s.emp_no = de.emp_no 
+JOIN departments d ON de.dept_no = d.dept_no 
+GROUP BY d.dept_name;
+
+-- 2026-11-09 20:04:03
+WITH EmployeeSalaries AS (
+    SELECT d.dept_name, s.salary
+    FROM employees e
+    JOIN dept_emp de ON e.emp_no = de.emp_no
+    JOIN departments d ON de.dept_no = d.dept_no
+    JOIN salaries s ON e.emp_no = s.emp_no
+)
+
+SELECT dept_name, AVG(salary) AS average_salary
+FROM EmployeeSalaries
+GROUP BY dept_name;

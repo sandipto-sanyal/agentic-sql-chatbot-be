@@ -17,7 +17,7 @@
     ],
     [
         "tool",
-        "You can simplify the given query using Common Table Expressions (CTEs) as follows:\n\n```sql\nWITH DepartmentSalaries AS (\n    SELECT department, salary\n    FROM employees\n)\n\nSELECT department, AVG(salary) AS average_salary\nFROM DepartmentSalaries\nGROUP BY department;\n```\n\nIn this simplified version, the CTE `DepartmentSalaries` retrieves the department and salary from the `employees` table. The main query then calculates the average salary for each department based on this CTE."
+        "To simplify the given query using Common Table Expressions (CTEs), we can break it down into two parts: first, we will select the necessary data from the `employees` table, and then we will perform the aggregation. Here's how you can do it:\n\n```sql\nWITH EmployeeSalaries AS (\n    SELECT department, salary\n    FROM employees\n)\n\nSELECT department, AVG(salary) AS average_salary\nFROM EmployeeSalaries\nGROUP BY department;\n```\n\nIn this version:\n1. The CTE `EmployeeSalaries` selects the `department` and `salary` from the `employees` table.\n2. The main query then calculates the average salary per department using the CTE. \n\nThis structure can make the query more readable and easier to manage, especially if you need to include more complex logic later on."
     ],
     [
         "ai",
@@ -25,10 +25,10 @@
     ],
     [
         "tool",
-        "| department         |   average_salary |\n|:-------------------|-----------------:|\n| Customer Service   |          58770.4 |\n| Development        |          59478.9 |\n| Finance            |          70489.4 |\n| Human Resources    |          55574.9 |\n| Marketing          |          71913.2 |\n| Production         |          59605.5 |\n| Quality Management |          57251.3 |\n| Research           |          59665.2 |\n| Sales              |          80667.6 |"
+        "| dept_name          |   average_salary |\n|:-------------------|-----------------:|\n| Development        |          59478.9 |\n| Sales              |          80667.6 |\n| Production         |          59605.5 |\n| Human Resources    |          55574.9 |\n| Research           |          59665.2 |\n| Quality Management |          57251.3 |\n| Customer Service   |          58770.4 |\n| Marketing          |          71913.2 |\n| Finance            |          70489.4 |"
     ],
     [
         "ai",
-        "Here are the average salaries department-wise:\n\n| Department         | Average Salary |\n|:-------------------|----------------:|\n| Customer Service   |          58,770.4 |\n| Development        |          59,478.9 |\n| Finance            |          70,489.4 |\n| Human Resources    |          55,574.9 |\n| Marketing          |          71,913.2 |\n| Production         |          59,605.5 |\n| Quality Management |          57,251.3 |\n| Research           |          59,665.2 |\n| Sales              |          80,667.6 |"
+        "Here are the average salaries department-wise:\n\n| Department          | Average Salary |\n|:-------------------|----------------:|\n| Development        |          59,478.9 |\n| Sales              |          80,667.6 |\n| Production         |          59,605.5 |\n| Human Resources    |          55,574.9 |\n| Research           |          59,665.2 |\n| Quality Management |          57,251.3 |\n| Customer Service   |          58,770.4 |\n| Marketing          |          71,913.2 |\n| Finance            |          70,489.4 |"
     ]
 ]
