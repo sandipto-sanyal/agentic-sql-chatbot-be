@@ -364,3 +364,86 @@ WITH EmployeeSalaries AS (
 SELECT dept_name, AVG(salary) AS average_salary
 FROM EmployeeSalaries
 GROUP BY dept_name;
+
+-- 2026-11-09 21:10:27
+WITH MaxSalaries AS (
+    SELECT d.dept_name AS department, e.emp_no AS employee_id, MAX(s.salary) AS highest_salary
+    FROM employees e
+    JOIN dept_emp de ON e.emp_no = de.emp_no
+    JOIN departments d ON de.dept_no = d.dept_no
+    JOIN salaries s ON e.emp_no = s.emp_no
+    GROUP BY d.dept_name, e.emp_no
+)
+SELECT department, employee_id, highest_salary
+FROM MaxSalaries;
+
+-- 2026-11-09 21:11:24
+WITH EmployeeSalaries AS (
+    SELECT 
+        e.emp_no,
+        MAX(s.salary) AS highest_salary
+    FROM 
+        employees e
+    JOIN 
+        salaries s ON e.emp_no = s.emp_no
+    GROUP BY 
+        e.emp_no
+),
+DepartmentEmployees AS (
+    SELECT 
+        de.emp_no,
+        d.dept_name
+    FROM 
+        dept_emp de
+    JOIN 
+        departments d ON de.dept_no = d.dept_no
+)
+SELECT 
+    de.dept_name AS department, 
+    es.emp_no AS employee_id, 
+    es.highest_salary
+FROM 
+    EmployeeSalaries es
+JOIN 
+    DepartmentEmployees de ON es.emp_no = de.emp_no;
+
+-- 2026-11-09 21:14:38
+WITH EmployeeSalaries AS (
+    SELECT d.dept_no, e.emp_no, s.salary
+    FROM employees e
+    JOIN dept_emp de ON e.emp_no = de.emp_no
+    JOIN departments d ON de.dept_no = d.dept_no
+    JOIN salaries s ON e.emp_no = s.emp_no
+)
+
+SELECT dept_no, emp_no, MAX(salary) AS highest_salary
+FROM EmployeeSalaries
+GROUP BY dept_no;
+
+-- 2026-11-09 21:14:56
+WITH EmployeeDepartment AS (
+    SELECT e.emp_no, de.dept_no
+    FROM employees e
+    JOIN dept_emp de ON e.emp_no = de.emp_no
+),
+EmployeeSalaries AS (
+    SELECT ed.dept_no, ed.emp_no, s.salary
+    FROM EmployeeDepartment ed
+    JOIN salaries s ON ed.emp_no = s.emp_no
+)
+
+SELECT dept_no, emp_no, MAX(salary) AS highest_salary
+FROM EmployeeSalaries
+GROUP BY dept_no;
+
+-- 2026-11-09 21:15:25
+WITH EmployeeDetails AS (
+    SELECT e.emp_no, de.dept_no, s.salary
+    FROM employees e
+    JOIN dept_emp de ON e.emp_no = de.emp_no
+    JOIN salaries s ON e.emp_no = s.emp_no
+)
+
+SELECT dept_no, MAX(salary) AS highest_salary
+FROM EmployeeDetails
+GROUP BY dept_no;

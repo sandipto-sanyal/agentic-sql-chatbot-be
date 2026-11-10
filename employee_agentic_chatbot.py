@@ -13,6 +13,10 @@ from datetime import datetime
 import traceback
 import pandas as pd
 from simple_websocket.ws import Server
+
+# load the RAG components
+from vector_store import store_embeddings
+from document_search import search_cosine
 load_dotenv(override=True)
 
 # --------------------------------------------------------------------------- #
@@ -136,6 +140,12 @@ Schema:
     ]
     message = subagent_llm.invoke(subagent_messages)
     return str(message.content)
+
+
+@tool
+def store_user_task(task:str,ws:Server|None=None):
+    """Vectorizes and Stores the user task for retrieval of SQL query later"""
+    pass
 
 def send_ws_message(server_message:Dict[Any, Any], ws:Server|None = None):
     if isinstance(ws, Server):
