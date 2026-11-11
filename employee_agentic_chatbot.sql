@@ -485,3 +485,39 @@ GROUP BY
 
 -- 2026-11-11 16:25:16
 WITH CurrentEmployees AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), CurrentSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(cs.salary), 2) AS average_salary FROM departments d JOIN CurrentEmployees ce ON ce.dept_no = d.dept_no JOIN CurrentSalaries cs ON cs.emp_no = ce.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-11 17:25:12
+WITH CurrentEmployees AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), CurrentSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(cs.salary), 2) AS average_salary FROM departments d JOIN CurrentEmployees ce ON ce.dept_no = d.dept_no JOIN CurrentSalaries cs ON cs.emp_no = ce.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-11 17:27:07
+WITH CurrentEmployees AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), CurrentSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(cs.salary), 2) AS average_salary FROM departments d JOIN CurrentEmployees ce ON ce.dept_no = d.dept_no JOIN CurrentSalaries cs ON cs.emp_no = ce.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-11 17:47:24
+WITH ActiveAssignments AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN ActiveAssignments de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-11 17:48:22
+WITH CurrentEmployees AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), CurrentSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(cs.salary), 2) AS average_salary FROM departments d JOIN CurrentEmployees ce ON ce.dept_no = d.dept_no JOIN CurrentSalaries cs ON cs.emp_no = ce.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-11 17:49:11
+WITH CurrentEmployees AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), CurrentSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(cs.salary), 2) AS average_salary FROM departments d JOIN CurrentEmployees ce ON ce.dept_no = d.dept_no JOIN CurrentSalaries cs ON cs.emp_no = ce.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-11 17:50:45
+WITH CurrentEmployees AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), CurrentSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(cs.salary), 2) AS average_salary FROM departments d JOIN CurrentEmployees ce ON ce.dept_no = d.dept_no JOIN CurrentSalaries cs ON cs.emp_no = ce.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-11 17:55:58
+WITH CurrentEmployees AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), CurrentSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(cs.salary), 2) AS average_salary FROM departments d JOIN CurrentEmployees ce ON ce.dept_no = d.dept_no JOIN CurrentSalaries cs ON cs.emp_no = ce.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-11 18:03:30
+WITH CurrentEmployees AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), CurrentSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(cs.salary), 2) AS average_salary FROM departments d JOIN CurrentEmployees ce ON ce.dept_no = d.dept_no JOIN CurrentSalaries cs ON cs.emp_no = ce.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-11 18:06:18
+WITH ActiveAssignments AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN ActiveAssignments de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-11 18:08:16
+WITH current_salaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01'), current_dept_assignments AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), employee_details AS (SELECT e.emp_no, e.first_name, e.last_name, ds.dept_no FROM employees e JOIN current_dept_assignments ds ON e.emp_no = ds.emp_no), department_salaries AS (SELECT d.dept_no, d.dept_name, ed.emp_no, CONCAT(ed.first_name, ' ', ed.last_name) AS employee_name, cs.salary FROM current_salaries cs JOIN employee_details ed ON cs.emp_no = ed.emp_no JOIN departments d ON ed.dept_no = d.dept_no), ranked_salaries AS (SELECT dept_no, employee_name, salary, DENSE_RANK() OVER(PARTITION BY dept_no ORDER BY salary DESC) AS salary_rank FROM department_salaries) SELECT d.dept_name AS department, r.employee_name, r.salary AS `highest salary` FROM ranked_salaries r JOIN departments d ON r.dept_no = d.dept_no WHERE r.salary_rank = 1 ORDER BY department, employee_name;
+
+-- 2026-11-11 18:11:39
+WITH current_salaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01'), current_dept_assignments AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), employee_details AS (SELECT e.emp_no, e.first_name, e.last_name, ds.dept_no FROM employees e JOIN current_dept_assignments ds ON e.emp_no = ds.emp_no), department_salaries AS (SELECT d.dept_no, d.dept_name, ed.emp_no, CONCAT(ed.first_name, ' ', ed.last_name) AS employee_name, cs.salary FROM current_salaries cs JOIN employee_details ed ON cs.emp_no = ed.emp_no JOIN departments d ON ed.dept_no = d.dept_no), ranked_salaries AS (SELECT dept_no, employee_name, salary, DENSE_RANK() OVER(PARTITION BY dept_no ORDER BY salary DESC) AS salary_rank FROM department_salaries) SELECT d.dept_name AS department, r.employee_name, r.salary AS `highest salary` FROM ranked_salaries r JOIN departments d ON r.dept_no = d.dept_no WHERE r.salary_rank = 1 ORDER BY department, employee_name;
+
+-- 2026-11-11 18:15:45
+WITH current_salaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01'), current_dept_assignments AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), employee_details AS (SELECT e.emp_no, e.first_name, e.last_name, ds.dept_no FROM employees e JOIN current_dept_assignments ds ON e.emp_no = ds.emp_no), department_salaries AS (SELECT d.dept_no, d.dept_name, ed.emp_no, CONCAT(ed.first_name, ' ', ed.last_name) AS employee_name, cs.salary FROM current_salaries cs JOIN employee_details ed ON cs.emp_no = ed.emp_no JOIN departments d ON ed.dept_no = d.dept_no), ranked_salaries AS (SELECT dept_no, employee_name, salary, DENSE_RANK() OVER(PARTITION BY dept_no ORDER BY salary DESC) AS salary_rank FROM department_salaries) SELECT d.dept_name AS department, r.employee_name, r.salary AS `highest salary` FROM ranked_salaries r JOIN departments d ON r.dept_no = d.dept_no WHERE r.salary_rank = 1 ORDER BY department, employee_name;

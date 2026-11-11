@@ -100,11 +100,15 @@ def query_runner(query: str,
     })
     employees_db = MySQLConnector(database_name="employees")
     try:
+        content = f"""Running query:
+```sql        
+{query}
+```"""
         send_ws_message(server_message={
                 'type_': 'SubagentMessage',
                 'toolname':'query_runner',
                 'step': None,
-                'content': f"Running query: {query}"
+                'content': content
             }, ws=ws)
         query_result = employees_db.execute_query(query)
         if isinstance(query_result, pd.DataFrame):
@@ -188,11 +192,11 @@ def orchestrator(user_task: str, max_steps: int = 8,
     TOOLS_BY_NAME = {t.name: t for t in SUBAGENTS}
 
     # chat completions API
-    orchestrator = AzureChatOpenAI(
-        azure_deployment=ORCHESTRATOR_MODEL,
-        api_version="2025-04-01-preview",
-        temperature=0.2
-    ).bind_tools(SUBAGENTS)
+    # orchestrator = AzureChatOpenAI(
+    #     azure_deployment=ORCHESTRATOR_MODEL,
+    #     api_version="2025-04-01-preview",
+    #     temperature=0.2
+    # ).bind_tools(SUBAGENTS)
     
     # for reasoning
     orchestrator = AzureChatOpenAI(
@@ -209,8 +213,13 @@ def orchestrator(user_task: str, max_steps: int = 8,
         HumanMessage(user_task),
     ]
 
-    for step in range(max_steps):
-        print(f"\n[orchestrator] planning step {step + 1}...")
+    for step in range(1, max_steps+1):
+        print(f"\n[orchestrator] planning step {step}...")
+        send_ws_message(server_message={
+            "type_":"ProgressMessage",
+            "content": f"[orchestrator] planning step {step}",
+            "step": step
+        }, ws=ws)
         ai_message = orchestrator.invoke(messages)
         messages.append(ai_message)
 
@@ -220,7 +229,9 @@ def orchestrator(user_task: str, max_steps: int = 8,
             with open("messages.json", "w") as f:
                 message_json = [(elem.type, elem.text) for elem in messages]
                 json.dump(message_json, f, indent=4)
-            return str(ai_message.content), step
+            # return str(ai_message.content), step
+            # for gpt-6.1-sol
+            return str(ai_message.content[0].get('text', "Orchestrator Model output seems to be of unexpected format")), step
 
         # Execute each requested sub-agent and feed results back.
         for call in ai_message.tool_calls:
