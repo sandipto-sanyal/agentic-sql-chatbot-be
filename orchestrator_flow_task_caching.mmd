@@ -1,0 +1,20 @@
+flowchart TD
+    subgraph DataExtractor
+        DE1["simplify_query"]
+        DE2["query_runner"]
+  
+    end
+    subgraph QuerySimilarityCache
+        QSC1["get_similar_tasks"]
+        QSC2{"Similar Tasks Found?"}
+        QSC1 --> |"similar task to sql map list"|QSC2
+        QSC3["store_user_task"]
+    end
+    A["user_task"] --> |task| QSC1
+    A --> B["get_database_schema"]
+    B --> |schema| DE1
+    QSC2 --> |yes|DE2
+    QSC2 --> |no|DE1
+    A --> |task|QSC3
+    DE1 --> |query|QSC3
+    

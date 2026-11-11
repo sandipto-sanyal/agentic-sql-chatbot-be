@@ -1,14 +1,18 @@
 [
     [
         "system",
-        "You are an orchestrator that has access to specialized agents.\nAny query related to employees table: always use as per following flow logic.\nflowchart TD\n    A[\"user_task\"] --> B[\"get_database_schema\"]\n    A --> |user_task| C[\"simplify_query\"]\n    B --> |schema| C\n    C --> |query|D[\"query_runner\"]\n    D --> |records|E[\"markdown_formatter\"]\nFor any other query answer directly from your knowledge"
+        "You are an orchestrator that has access to specialized agents.\nAny query related to employees table: always use as per following flow logic.\nflowchart TD\n    subgraph DataExtractor\n        DE1[\"simplify_query\"]\n        DE2[\"query_runner\"]\n  \n    end\n    subgraph QuerySimilarityCache\n        QSC1[\"get_similar_tasks\"]\n        QSC2{\"Similar Tasks Found?\"}\n        QSC1 --> |\"similar task to sql map list\"|QSC2\n        QSC3[\"store_user_task\"]\n    end\n    A[\"user_task\"] --> |task| QSC1\n    A --> B[\"get_database_schema\"]\n    B --> |schema| DE1\n    QSC2 --> |yes|DE2\n    QSC2 --> |no|DE1\n    A --> |task|QSC3\n    DE1 --> |query|QSC3\n    \nFor any other query answer directly from your knowledge"
     ],
     [
         "human",
-        "Give me the highest salary and the employee getting it for each deparment."
+        "Department wise average salaries"
     ],
     [
         "ai",
+        ""
+    ],
+    [
+        "tool",
         ""
     ],
     [
@@ -16,8 +20,12 @@
         "CREATE TABLE `departments` (\n  `dept_no` char(4) NOT NULL,\n  `dept_name` varchar(40) NOT NULL,\n  PRIMARY KEY (`dept_no`),\n  UNIQUE KEY `dept_name` (`dept_name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `dept_emp` (\n  `emp_no` int NOT NULL,\n  `dept_no` char(4) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`dept_no`),\n  KEY `dept_no` (`dept_no`),\n  CONSTRAINT `dept_emp_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE,\n  CONSTRAINT `dept_emp_ibfk_2` FOREIGN KEY (`dept_no`) REFERENCES `departments` (`dept_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `dept_manager` (\n  `emp_no` int NOT NULL,\n  `dept_no` char(4) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`dept_no`),\n  KEY `dept_no` (`dept_no`),\n  CONSTRAINT `dept_manager_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE,\n  CONSTRAINT `dept_manager_ibfk_2` FOREIGN KEY (`dept_no`) REFERENCES `departments` (`dept_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `employees` (\n  `emp_no` int NOT NULL,\n  `birth_date` date NOT NULL,\n  `first_name` varchar(14) NOT NULL,\n  `last_name` varchar(16) NOT NULL,\n  `gender` enum('M','F') NOT NULL,\n  `hire_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `salaries` (\n  `emp_no` int NOT NULL,\n  `salary` int NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`from_date`),\n  CONSTRAINT `salaries_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `titles` (\n  `emp_no` int NOT NULL,\n  `title` varchar(50) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date DEFAULT NULL,\n  PRIMARY KEY (`emp_no`,`title`,`from_date`),\n  CONSTRAINT `titles_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
     ],
     [
+        "ai",
+        ""
+    ],
+    [
         "tool",
-        "To simplify the given query using Common Table Expressions (CTEs), we can break it down into a CTE that first selects the necessary columns and then performs the aggregation. Here's how you can do it:\n\n```sql\nWITH EmployeeSalaries AS (\n    SELECT department_id, employee_id, salary\n    FROM employees\n)\n\nSELECT department_id, MAX(salary) AS highest_salary\nFROM EmployeeSalaries\nGROUP BY department_id;\n```\n\nIn this version, the `EmployeeSalaries` CTE selects the relevant columns from the `employees` table. Then, the main query groups the results by `department_id` and calculates the maximum salary for each department."
+        ""
     ],
     [
         "ai",
@@ -25,7 +33,7 @@
     ],
     [
         "tool",
-        "Error getting schema:\nTraceback (most recent call last):\n  File \"C:\\Users\\sandi\\python_venvs\\python313\\Lib\\site-packages\\mysql\\connector\\connection_cext.py\", line 772, in cmd_query\n    self._cmysql.query(\n    ~~~~~~~~~~~~~~~~~~^\n        query,\n        ^^^^^^\n    ...<3 lines>...\n        query_attrs=self.query_attrs,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n_mysql_connector.MySQLInterfaceError: Expression #2 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'EmployeeSalaries.emp_no' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\sandi\\OneDrive\\Documents\\Freelance\\freelance_demo_projects\\agentic-chatbot-be\\mysql_connectivity.py\", line 82, in execute_query\n    cursor.execute(query, params or ())\n    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\sandi\\python_venvs\\python313\\Lib\\site-packages\\mysql\\connector\\cursor_cext.py\", line 353, in execute\n    self._connection.cmd_query(\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        self._stmt_partition[\"mappable_stmt\"],\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        raw_as_string=self._raw_as_string,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\sandi\\python_venvs\\python313\\Lib\\site-packages\\mysql\\connector\\opentelemetry\\context_propagation.py\", line 97, in wrapper\n    return method(cnx, *args, **kwargs)\n  File \"C:\\Users\\sandi\\python_venvs\\python313\\Lib\\site-packages\\mysql\\connector\\connection_cext.py\", line 781, in cmd_query\n    raise get_mysql_exception(\n        err.errno, msg=err.msg, sqlstate=err.sqlstate\n    ) from err\nmysql.connector.errors.ProgrammingError: 1055 (42000): Expression #2 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'EmployeeSalaries.emp_no' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\sandi\\OneDrive\\Documents\\Freelance\\freelance_demo_projects\\agentic-chatbot-be\\employee_agentic_chatbot.py\", line 104, in query_runner\n    query_result = employees_db.execute_query(query)\n  File \"C:\\Users\\sandi\\OneDrive\\Documents\\Freelance\\freelance_demo_projects\\agentic-chatbot-be\\mysql_connectivity.py\", line 92, in execute_query\n    raise RuntimeError(f\"Query failed: {e}\") from e\nRuntimeError: Query failed: 1055 (42000): Expression #2 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'EmployeeSalaries.emp_no' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by\n"
+        "Here is the simplified version of the given SQL query using Common Table Expressions (CTEs):\n\n```sql\nWITH CurrentEmployees AS (\n    SELECT emp_no, dept_no\n    FROM dept_emp\n    WHERE to_date = '9999-01-01'\n),\nCurrentSalaries AS (\n    SELECT emp_no, salary\n    FROM salaries\n    WHERE to_date = '9999-01-01'\n)\nSELECT d.dept_name AS department, \n       ROUND(AVG(cs.salary), 2) AS average_salary\nFROM departments d\nJOIN CurrentEmployees ce ON ce.dept_no = d.dept_no\nJOIN CurrentSalaries cs ON cs.emp_no = ce.emp_no\nGROUP BY d.dept_no, d.dept_name\nORDER BY average_salary DESC;\n```\n\n### Explanation:\n1. **CurrentEmployees CTE**: This retrieves the employees who are currently in a department (where `to_date` is `9999-01-01`).\n2. **CurrentSalaries CTE**: This retrieves the current salaries of these employees (where `to_date` is also `9999-01-01`).\n3. The main query joins the `departments` table with the two CTEs to calculate the average salary per department, rounding to two decimal places, and orders the results by average salary in descending order."
     ],
     [
         "ai",
@@ -33,34 +41,14 @@
     ],
     [
         "tool",
-        "To simplify the given SQL query using Common Table Expressions (CTEs), you can break down the existing logic into smaller, manageable parts. The original query already uses a CTE to gather employee salaries along with department information. Here\u2019s how you can further clarify and structure the logic into multiple CTEs:\n\n```sql\nWITH EmployeeDepartment AS (\n    SELECT e.emp_no, de.dept_no\n    FROM employees e\n    JOIN dept_emp de ON e.emp_no = de.emp_no\n),\nEmployeeSalaries AS (\n    SELECT ed.dept_no, ed.emp_no, s.salary\n    FROM EmployeeDepartment ed\n    JOIN salaries s ON ed.emp_no = s.emp_no\n)\n\nSELECT dept_no, emp_no, MAX(salary) AS highest_salary\nFROM EmployeeSalaries\nGROUP BY dept_no;\n```\n\n### Explanation:\n1. **EmployeeDepartment CTE:** \n   - This first CTE collects `emp_no` and their corresponding `dept_no` by joining the `employees` table with the `dept_emp` table.\n\n2. **EmployeeSalaries CTE:** \n   - The second CTE uses the result from `EmployeeDepartment` to join with the `salaries` table, retrieving the salary information along with the department number and employee number.\n\n3. **Final Selection:** \n   - The main query then selects the department number and employee number, calculating the maximum salary for each department using the previously defined CTE.\n\nThis structure maintains clarity, making it easier to understand the flow of data through the different CTEs."
-    ],
-    [
-        "ai",
-        ""
+        "Embedding stored successfully"
     ],
     [
         "tool",
-        "Error getting schema:\nTraceback (most recent call last):\n  File \"C:\\Users\\sandi\\python_venvs\\python313\\Lib\\site-packages\\mysql\\connector\\connection_cext.py\", line 772, in cmd_query\n    self._cmysql.query(\n    ~~~~~~~~~~~~~~~~~~^\n        query,\n        ^^^^^^\n    ...<3 lines>...\n        query_attrs=self.query_attrs,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n_mysql_connector.MySQLInterfaceError: Expression #2 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'EmployeeSalaries.emp_no' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\sandi\\OneDrive\\Documents\\Freelance\\freelance_demo_projects\\agentic-chatbot-be\\mysql_connectivity.py\", line 82, in execute_query\n    cursor.execute(query, params or ())\n    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\sandi\\python_venvs\\python313\\Lib\\site-packages\\mysql\\connector\\cursor_cext.py\", line 353, in execute\n    self._connection.cmd_query(\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        self._stmt_partition[\"mappable_stmt\"],\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        raw_as_string=self._raw_as_string,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\sandi\\python_venvs\\python313\\Lib\\site-packages\\mysql\\connector\\opentelemetry\\context_propagation.py\", line 97, in wrapper\n    return method(cnx, *args, **kwargs)\n  File \"C:\\Users\\sandi\\python_venvs\\python313\\Lib\\site-packages\\mysql\\connector\\connection_cext.py\", line 781, in cmd_query\n    raise get_mysql_exception(\n        err.errno, msg=err.msg, sqlstate=err.sqlstate\n    ) from err\nmysql.connector.errors.ProgrammingError: 1055 (42000): Expression #2 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'EmployeeSalaries.emp_no' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\sandi\\OneDrive\\Documents\\Freelance\\freelance_demo_projects\\agentic-chatbot-be\\employee_agentic_chatbot.py\", line 104, in query_runner\n    query_result = employees_db.execute_query(query)\n  File \"C:\\Users\\sandi\\OneDrive\\Documents\\Freelance\\freelance_demo_projects\\agentic-chatbot-be\\mysql_connectivity.py\", line 92, in execute_query\n    raise RuntimeError(f\"Query failed: {e}\") from e\nRuntimeError: Query failed: 1055 (42000): Expression #2 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'EmployeeSalaries.emp_no' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by\n"
+        "| department         |   average_salary |\n|:-------------------|-----------------:|\n| Sales              |          88853   |\n| Marketing          |          80058.9 |\n| Finance            |          78559.9 |\n| Research           |          67913.4 |\n| Production         |          67843.3 |\n| Development        |          67657.9 |\n| Customer Service   |          67285.2 |\n| Quality Management |          65442   |\n| Human Resources    |          63921.9 |"
     ],
     [
         "ai",
-        ""
-    ],
-    [
-        "tool",
-        "The given SQL query can be simplified using Common Table Expressions (CTEs) while retaining the original logic. Below is the simplified version of the query using CTEs:\n\n```sql\nWITH EmployeeDetails AS (\n    SELECT e.emp_no, de.dept_no, s.salary\n    FROM employees e\n    JOIN dept_emp de ON e.emp_no = de.emp_no\n    JOIN salaries s ON e.emp_no = s.emp_no\n)\n\nSELECT dept_no, MAX(salary) AS highest_salary\nFROM EmployeeDetails\nGROUP BY dept_no;\n```\n\n### Explanation:\n1. **Combining CTEs**: Instead of creating two separate CTEs for `EmployeeDepartment` and `EmployeeSalaries`, we combine these into a single CTE named `EmployeeDetails` that retrieves `emp_no`, `dept_no`, and `salary` directly in one query.\n2. **Final Selection**: The final `SELECT` statement remains unchanged, fetching the department number and the maximum salary for each department from the combined CTE.\n\nThis approach simplifies the structure of the query while keeping the functionality intact."
-    ],
-    [
-        "ai",
-        ""
-    ],
-    [
-        "tool",
-        "| dept_no   |   highest_salary |\n|:----------|-----------------:|\n| d005      |           144434 |\n| d007      |           158220 |\n| d004      |           138273 |\n| d003      |           141953 |\n| d008      |           130211 |\n| d006      |           132103 |\n| d009      |           144866 |\n| d001      |           145128 |\n| d002      |           142395 |"
-    ],
-    [
-        "ai",
-        "Here are the highest salaries along with the corresponding department numbers:\n\n| Department No | Highest Salary |\n|---------------|----------------|\n| d001         | 145,128        |\n| d002         | 142,395        |\n| d003         | 141,953        |\n| d004         | 138,273        |\n| d005         | 144,434        |\n| d006         | 132,103        |\n| d007         | 158,220        |\n| d008         | 130,211        |\n| d009         | 144,866        |\n\nIf you need any further information or assistance, feel free to ask!"
+        "### Average current salary by department\n\nBased on current salaries and current department assignments:\n\n| Department | Average salary |\n|---|---:|\n| Sales | 88,853.00 |\n| Marketing | 80,058.90 |\n| Finance | 78,559.90 |\n| Research | 67,913.40 |\n| Production | 67,843.30 |\n| Development | 67,657.90 |\n| Customer Service | 67,285.20 |\n| Quality Management | 65,442.00 |\n| Human Resources | 63,921.90 |"
     ]
 ]

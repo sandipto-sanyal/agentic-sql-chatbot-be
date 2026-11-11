@@ -16,7 +16,7 @@ from simple_websocket.ws import Server
 
 # load the RAG components
 from vector_store import store_embeddings
-from document_search import search_cosine
+from document_search import search_similar
 load_dotenv(override=True)
 
 # --------------------------------------------------------------------------- #
@@ -34,6 +34,7 @@ load_dotenv(override=True)
 
 ORCHESTRATOR_MODEL = os.environ["ORCHESTRATOR_MODEL"]
 SUBAGENT_MODEL = os.environ["SUBAGENT_MODEL"]
+ORCHESTRATOR_FLOW_MMD = os.environ['ORCHESTRATOR_FLOW_MMD']
 
 def _subagent_llm(temperature: float) -> AzureChatOpenAI | ChatOpenAI:
     # low temperature: precise and concise output
@@ -143,9 +144,23 @@ Schema:
 
 
 @tool
-def store_user_task(task:str,ws:Server|None=None):
-    """Vectorizes and Stores the user task for retrieval of SQL query later"""
-    pass
+def store_user_task(task:str,
+                    query:str,
+                    ws:Annotated[Server | None, InjectedToolArg]=None):
+    """Vectorizes and Stores the user task and associated SQL for retrieval of SQL query later
+    **Must run after simplify_query produces a SQL query to store
+    """
+    _ = store_embeddings(texts=[task], metadatas=[{'query':query}])
+    return "Embedding stored successfully"
+
+@tool
+def get_similar_tasks(task:str, ws:Annotated[Server | None, InjectedToolArg]=None):
+    """Searches similar task user presented to the chatbot and retrieves the SQL associated
+    **Must run before simplify_query so that we do not re-compute the SQL for task which user has already asked before.
+    """
+    collections = search_similar(query=task)
+    return collections
+    
 
 def send_ws_message(server_message:Dict[Any, Any], ws:Server|None = None):
     if isinstance(ws, Server):
@@ -155,7 +170,7 @@ def send_ws_message(server_message:Dict[Any, Any], ws:Server|None = None):
 def orchestrator(user_task: str, max_steps: int = 8,
                  ws:Server|None=None) -> Tuple[str, int]:
     """Drive the multi-agent workflow until the orchestrator produces a final answer."""
-    with open("orchestrator_flow.mmd", "r") as f:
+    with open(ORCHESTRATOR_FLOW_MMD, "r") as f:
         flow = f.read()
     ORCHESTRATOR_SYSTEM_PROMPT = "\n".join((
         "You are an orchestrator that has access to specialized agents.",
@@ -163,14 +178,28 @@ def orchestrator(user_task: str, max_steps: int = 8,
         "{flow}".format(flow=flow),
         "For any other query answer directly from your knowledge"
     ))
-    SUBAGENTS = [get_database_schema, query_runner, simplify_query]
+    SUBAGENTS = [
+        get_database_schema, 
+        query_runner, 
+        simplify_query, 
+        store_user_task,
+        get_similar_tasks
+            ]
     TOOLS_BY_NAME = {t.name: t for t in SUBAGENTS}
 
-    
+    # chat completions API
     orchestrator = AzureChatOpenAI(
         azure_deployment=ORCHESTRATOR_MODEL,
         api_version="2025-04-01-preview",
         temperature=0.2
+    ).bind_tools(SUBAGENTS)
+    
+    # for reasoning
+    orchestrator = AzureChatOpenAI(
+        azure_deployment=ORCHESTRATOR_MODEL,
+        api_version="2025-04-01-preview",
+        use_responses_api=True,
+        reasoning={"effort": "medium"},   # "low" | "medium" | "high"
     ).bind_tools(SUBAGENTS)
 
     # orchestrator = ChatOpenAI(model=ORCHESTRATOR_MODEL, temperature=0.2).bind_tools(SUBAGENTS)

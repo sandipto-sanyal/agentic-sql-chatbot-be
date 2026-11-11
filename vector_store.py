@@ -162,6 +162,7 @@ def store_embeddings(
 
 if __name__ == "__main__":
     text = "python is great"
+    ensure_vector_index()                       # once, creates the vector index
     text_len = store_embeddings(
         texts=[text],
         metadatas=[{"type":"sample message"}]

@@ -447,3 +447,41 @@ WITH EmployeeDetails AS (
 SELECT dept_no, MAX(salary) AS highest_salary
 FROM EmployeeDetails
 GROUP BY dept_no;
+
+-- 2026-11-11 15:58:43
+WITH DepartmentEmployees AS (
+    SELECT 
+        de.emp_no,
+        de.dept_no
+    FROM 
+        dept_emp de
+),
+EmployeeSalaries AS (
+    SELECT 
+        s.emp_no,
+        s.salary
+    FROM 
+        salaries s
+),
+DepartmentInfo AS (
+    SELECT 
+        d.dept_no,
+        d.dept_name
+    FROM 
+        departments d
+)
+
+SELECT 
+    di.dept_name, 
+    AVG(es.salary) AS average_salary
+FROM 
+    DepartmentEmployees de
+JOIN 
+    EmployeeSalaries es ON de.emp_no = es.emp_no
+JOIN 
+    DepartmentInfo di ON de.dept_no = di.dept_no
+GROUP BY 
+    di.dept_name;
+
+-- 2026-11-11 16:25:16
+WITH CurrentEmployees AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), CurrentSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(cs.salary), 2) AS average_salary FROM departments d JOIN CurrentEmployees ce ON ce.dept_no = d.dept_no JOIN CurrentSalaries cs ON cs.emp_no = ce.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
