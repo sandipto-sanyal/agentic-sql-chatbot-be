@@ -23,10 +23,11 @@ from functools import lru_cache
 from typing import Any, Optional, Sequence
 
 from dotenv import load_dotenv
+import pymongo
 from pymongo import MongoClient, ReplaceOne
 from pymongo.collection import Collection
 from pymongo.database import Database
-
+import bson
 from embeddings import embed_documents, embed_query
 
 load_dotenv(override=True)
@@ -116,7 +117,7 @@ def store_embedding(
     metadata: Optional[dict[str, Any]] = None,
     doc_id: Any = None,
     collection: Optional[Collection] = None,
-) -> Any:
+) -> bson.ObjectId:
     """Embed `text` and store it. Returns the stored document's _id.
 
     If `doc_id` is given, an existing document with that _id is replaced
@@ -138,7 +139,7 @@ def store_embeddings(
     metadatas: Optional[Sequence[Optional[dict[str, Any]]]] = None,
     doc_ids: Optional[Sequence[Any]] = None,
     collection: Optional[Collection] = None,
-) -> int:
+) -> pymongo.results.InsertManyResult:
     """Embed many texts in one batch and store them. Returns the count written.
 
     `metadatas` and `doc_ids`, when given, must be the same length as `texts`.
@@ -164,19 +165,21 @@ def store_embeddings(
             upserts.append(ReplaceOne({"_id": doc["_id"]}, doc, upsert=True))
         else:
             inserts.append(doc)
-
+    results = None
     if inserts:
-        coll.insert_many(inserts)
+        results = coll.insert_many(inserts)
     if upserts:
-        coll.bulk_write(upserts)
-    return len(texts)
+        results = coll.bulk_write(upserts)
+    return results
 
 if __name__ == "__main__":
     text = "python is great"
     ensure_vector_index()                       # once, creates the vector index
     ensure_metadata_index()                     # once, creates the metadata.database index
-    text_len = store_embeddings(
-        texts=[text],
-        metadatas=[{"type":"sample message", "database":"testing"}]
+    results = store_embedding(
+        text=text,
+        metadata={"type":"sample message", "database":"testing"}
         )
+    print(results)
+    
     

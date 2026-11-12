@@ -1,0 +1,456 @@
+[
+    {
+        "type": "system",
+        "data": {
+            "content": "You are an orchestrator that has access to specialized agents.\nAny query related to employees table: always use as per following flow logic.\nflowchart TD\n    subgraph DataExtractor\n        DE1[\"simplify_query\"]\n        DE2[\"query_runner\"]\n        DE1 --> |query|DE2\n  \n    end\n    subgraph QuerySimilarityCache\n        QSC1[\"get_similar_tasks\"]\n        QSC2{\"Similar Tasks Found?\"}\n        QSC1 --> |\"similar task to sql map list\"|QSC2\n        QSC3[\"store_user_task\"]\n    end\n\n    subgraph DashboardCreator\n        DC1[\"generate_plotly_vizualizer_code\"] --> |plotly_code|DC2[\"put_plotly_code_in_metadata\"]\n    end\n    A[\"user_task\"] --> |task| QSC1\n    A --> B[\"get_database_schema\"]\n    B --> |schema| DE1\n    QSC2 --> |yes|DE2_Dummy\n    DE2_Dummy --> |query|DE2\n    QSC2 --> |no|DE1\n    A --> |task|QSC3\n    DE1 --> |query|QSC3\n    DE1 --> |query|DC1\n    QSC3 --> |_id|DC2\n    style DE2_Dummy fill:none,stroke:none,color:transparent\n    \nFor any other query answer directly from your knowledge",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "system",
+            "name": null,
+            "id": null
+        }
+    },
+    {
+        "type": "human",
+        "data": {
+            "content": "Department wise Average Salaries",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "human",
+            "name": null,
+            "id": null
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "arguments": "{\"task\":\"Department wise Average Salaries\"}",
+                    "call_id": "call_umXx4e5rCAMDfAUNzAwGPwnR",
+                    "name": "get_similar_tasks",
+                    "type": "function_call",
+                    "id": "fc_0fe4d97da54a3382006af5dd94af248196a9dd1ad0306be1f0",
+                    "status": "completed"
+                },
+                {
+                    "arguments": "{}",
+                    "call_id": "call_wP5ZVeO9ZL6GmnIrgdtC2GMY",
+                    "name": "get_database_schema",
+                    "type": "function_call",
+                    "id": "fc_0fe4d97da54a3382006af5dd94af388196a0f9cd302f9a93ae",
+                    "status": "completed"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_0fe4d97da54a3382006af5dd928f208196ad6c2bd951db17c7",
+                "created_at": 1794497938.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_0fe4d97da54a3382006af5dd928f208196ad6c2bd951db17c7",
+            "tool_calls": [
+                {
+                    "name": "get_similar_tasks",
+                    "args": {
+                        "task": "Department wise Average Salaries"
+                    },
+                    "id": "call_umXx4e5rCAMDfAUNzAwGPwnR",
+                    "type": "tool_call"
+                },
+                {
+                    "name": "get_database_schema",
+                    "args": {},
+                    "id": "call_wP5ZVeO9ZL6GmnIrgdtC2GMY",
+                    "type": "tool_call"
+                }
+            ],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 596,
+                "output_tokens": 53,
+                "total_tokens": 649,
+                "input_token_details": {
+                    "cache_creation": 0,
+                    "cache_read": 0
+                },
+                "output_token_details": {
+                    "reasoning": 0
+                }
+            }
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": [],
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_umXx4e5rCAMDfAUNzAwGPwnR",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": "CREATE TABLE `departments` (\n  `dept_no` char(4) NOT NULL,\n  `dept_name` varchar(40) NOT NULL,\n  PRIMARY KEY (`dept_no`),\n  UNIQUE KEY `dept_name` (`dept_name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `dept_emp` (\n  `emp_no` int NOT NULL,\n  `dept_no` char(4) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`dept_no`),\n  KEY `dept_no` (`dept_no`),\n  CONSTRAINT `dept_emp_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE,\n  CONSTRAINT `dept_emp_ibfk_2` FOREIGN KEY (`dept_no`) REFERENCES `departments` (`dept_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `dept_manager` (\n  `emp_no` int NOT NULL,\n  `dept_no` char(4) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`dept_no`),\n  KEY `dept_no` (`dept_no`),\n  CONSTRAINT `dept_manager_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE,\n  CONSTRAINT `dept_manager_ibfk_2` FOREIGN KEY (`dept_no`) REFERENCES `departments` (`dept_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `employees` (\n  `emp_no` int NOT NULL,\n  `birth_date` date NOT NULL,\n  `first_name` varchar(14) NOT NULL,\n  `last_name` varchar(16) NOT NULL,\n  `gender` enum('M','F') NOT NULL,\n  `hire_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `salaries` (\n  `emp_no` int NOT NULL,\n  `salary` int NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`from_date`),\n  CONSTRAINT `salaries_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `titles` (\n  `emp_no` int NOT NULL,\n  `title` varchar(50) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date DEFAULT NULL,\n  PRIMARY KEY (`emp_no`,`title`,`from_date`),\n  CONSTRAINT `titles_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_wP5ZVeO9ZL6GmnIrgdtC2GMY",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "id": "rs_0fe4d97da54a3382006af5dd97ea0081969c08b5e6ce57a273",
+                    "summary": [],
+                    "type": "reasoning",
+                    "content": [],
+                    "encrypted_content": "gAAAAABq9d2YUzEeGAJg8RwKeMA2LT4TTZ7Y_JJh5seHux5gbbIRseERT1svqdbRrsWmbrLCOlgif3zlrf_Onnphy1pKXXgDVzeyI27PQhoj798VoojJx_Oi4uoIkQx8jei70zE2Zp0JBTZAHXLbKdkz-NWlVyt4isXWFZjKPOfUsP8cVAnDISILdnXs29Miqy_NvZn1tBIF-7eaHPCG2uJIzE51av80udhmJJr7RJkMrxnyT1LqPIsXae0dNbSDQMRTpUYBE24iRCj85tcRngB8XVNqu1BMHe4IjAY2YEkN6Skvv3TV9q_7f3JCzxsu9MErODJ__qoJpXRKbCltvbO48G1G7yeoeJme4TEtPnawCmFR8nOpJgqNifZby8FlhCi7WcpHKMhNvFp0EyxiOQoxkCoCwaKQb6WdXePThESBAvCBuPRj-wnZ6j2hTGye_r9-IBV52peYqTE1wz1Wb1AxJSBr-mDzw8IKoMUqR9dbKLHUr9T7smb9GZg7cIP4WqBJr_TVzqveOMmITmcMMPZ_xiymWzkAPP7F2zB0VY4_1QBZ2EGd2QYTlZnmJk1vyTwaz2H2ZqTv6AuJYN953hs_28TygJZ50leYGUbajzIKaYBV7E30J5wgPF-HA9bYxHHqVXoGKRUTR2XEbUU-0tKLLZvSO63meZKlxn7VvkhQiXAh1cjqB7A0rYk8fOCjZ051b5niTjoRYg3wc4s5TMyjiUrcd9aGMdPoH7yu3vezkCX82TqjQ9npK-aS_7KW-ZNOZdki9k4B_ONMBVETEQTKtjsy-TsODuQ68gkKSwC2Z_sc6MxQy7dZTRLqy--PhSbKypwU10CalpoZYDsIclH1xDbInoFvBigOPnz8WnGN0ys4qJTTfu13JzHlClZ-cFTXK6XYF-RMuveL_dWpsEVpZByLUBxuNET6Z0z3sj8R-feUiw2vY_RBg90H5eefVyRV_3z4RegFYSARV5rrSHTA0xLtxeRnNdsw7aumeasZVnOdiqVOi-xewTQqyfeu8lx7JVbtpK4VX9fxqmvlaaW-FhSpSIISjw5nd8va7Lz5r_vyUVqY86-wRVcu7sfRQNhGDXgQGVFaxhFdPdBhO8DwmJqa_moOvdARK5mbjFC3nPQU2zJDkQ6BSFbgXgb1TvN_H2qXjQzS7l2nPlgWk45ivW5i0T1XARbVGbjxI_vp_5Itip-dkid6li_oc974ukmHu6haAnTWz2-Qlexyk2YrlelLT86YGc9G1Dy39kX5BpoBGXT8irtsK2VC-fuTcy7pzUfbwk7kRiuZhZnqRTKdcwUDLJu0NYQ3neIy8P30DM5J_veJEKIDj1-fP32ZhLa01AId4nLPVDgCXko1eokLhPsQ1NvF39JfDqPBR7sJAzAPNWgjIgRcUvRO9bUxjTNcRkJKRTNToZiHbPtamUmBprrAf0K0VU5dNb2iE9DRXkB0jxMW02M="
+                },
+                {
+                    "arguments": "{\"task\":\"Department wise Average Salaries\"}",
+                    "call_id": "call_CasvDusRYhHOw5eVc1K9ORyB",
+                    "name": "get_similar_tasks",
+                    "type": "function_call",
+                    "id": "fc_0fe4d97da54a3382006af5dd9840cc8196923cdddbd1723846",
+                    "status": "completed"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_0fe4d97da54a3382006af5dd96e95c8196a51a788cfb8405ed",
+                "created_at": 1794497942.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_0fe4d97da54a3382006af5dd96e95c8196a51a788cfb8405ed",
+            "tool_calls": [
+                {
+                    "name": "get_similar_tasks",
+                    "args": {
+                        "task": "Department wise Average Salaries"
+                    },
+                    "id": "call_CasvDusRYhHOw5eVc1K9ORyB",
+                    "type": "tool_call"
+                }
+            ],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 1366,
+                "output_tokens": 34,
+                "total_tokens": 1400,
+                "input_token_details": {
+                    "cache_creation": 0,
+                    "cache_read": 1363
+                },
+                "output_token_details": {
+                    "reasoning": 8
+                }
+            }
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": [],
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_CasvDusRYhHOw5eVc1K9ORyB",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "id": "rs_0fe4d97da54a3382006af5dd9ae9608196a8b118966e17ad58",
+                    "summary": [],
+                    "type": "reasoning",
+                    "content": [],
+                    "encrypted_content": "gAAAAABq9d2fwWXOeGoUs9fDMEB3qwnwmUOxr-3Qo_yPc1yyl6Gw9RkhmC6JbQ6MCO1dAD_vs_Y3yE3rX4Fs3JeprQiA_DNJBIyc88hP0GTMvBBrYMt5RpuDH2QMXtuWMX4324Ial3USOaLKtyCNhSK2woKdifK5QYgLLzkOTjxglkwWJav-egnvJS3aJP0shCzK1R262gRHIqvMWbo-bwPcGuOpX9wBaXDc6aHmiXhKiQD3IbdxoK6Efe1WjzmjCvJ6v6BNZSg5kUTyzUE_M4NUUHOL3ZrHs_vqxJYflqZeex5epNnczbt6EZ0_SQcHs4-yK51mPwmLHp9XZUMct-B8ZINNt3t5XwXx3hM7I0CjGBOR-MbjOVosMK_Y8sMwUpNqcoZt9cCKsciavJxqczVHDM4rkpZ54l-IRR5LihtBuSingTgJTOoCcHhDigjYHt3s1RxIWamKFOTIKWWe2cYr7Ll6Bw7-MjFNRHIod_Hy487moetv2scF0Jm8sigomlVtXCxHfTCauUAnAwznuGj4HUJXOfY3WbJFn0BdwQa5eaeamYQ4d9VkAQvF8useuh2o8Gqq-P81Xf6_oO7fl0SjumRBDFMplv45LsFH0gy4IUX5y3wg9VS5K-GZ6Rmhwq8247h6DJk4RTlB9DW4wxbEKFRYxEximkDr9HstBq_0hrB6wmNCh0XM0euZ2zpC_yy2Mq8a9luVYwprZLOriwxa9RhbvL_zYlH9PVxMOjA1fqDyEjWY6bXC4xYRVcasB866EoWqluRk0h9uxiVP5jDn9kwWpbUpxvA-T44Li5M93zyaptfJIPKVq2S9IqfyvYzAYVBHt0hSpwB58pxEcBLi1eJI863Ufmy-G_rFrJFOca_7sqNg3b-chJaM2c4LZIv7Ny9kEciLdArnlRM-YJVxg9Pa1LenQMIIDs5rxCfxnJfLzbMdQkRODnj4hFENlM-iGtvSj8PCjpoUqocqKsPIZb6krtcYe7aMhsr26mPJlHA1BUo6Ov-4Par3qZXlh0ev8vFAMQLxmttQjFkuF5IU-fzfknUmtHRQpAmpyulcZMpqIgOLNHPsSEDBTMGe-N8AJk-pebWhKsgKcW6SvOZlVRnKjCWANfisePhwkaUSeYnfupHWwF_s5ZgSjx6lNBaEJx7e_DsU9oKJMFq-PTyUVMnrLGp1xBwWdoTKTuuoNDRUt5q9WwG2Po1QSpuDmsccecp79-mDZAG6wYCaMY2xJY-cwdM3QAFA8CvuXLNl416who9cSuAtMmZid_6kQL7Iq86HdTa0oxs_xwf_vX53x975V3nEf43iy5adAF4zjxCMlx51K5nFCQihSRBBeZm2fE6kcr3HHxcmTVPuYNKkbQmLSJfFEBVM31bQ7234oe8C9nxpFZffeNIcjzx3H7n-vJjpdA02kBZERjqm3yhmhW5MGM_8CA4XFCUrYuBhdMdwBP4zEw63phQEI2LnJyYyQ1H_khm5"
+                },
+                {
+                    "arguments": "{\"query\":\"SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no JOIN salaries s ON s.emp_no = de.emp_no WHERE de.to_date = '9999-01-01' AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;\",\"schema\":\"CREATE TABLE departments (dept_no char(4) PRIMARY KEY, dept_name varchar(40) NOT NULL); CREATE TABLE dept_emp (emp_no int NOT NULL, dept_no char(4) NOT NULL, from_date date NOT NULL, to_date date NOT NULL, PRIMARY KEY(emp_no,dept_no)); CREATE TABLE salaries (emp_no int NOT NULL, salary int NOT NULL, from_date date NOT NULL, to_date date NOT NULL, PRIMARY KEY(emp_no,from_date)); CREATE TABLE employees (emp_no int PRIMARY KEY, birth_date date NOT NULL, first_name varchar(14) NOT NULL, last_name varchar(16) NOT NULL, gender enum('M','F') NOT NULL, hire_date date NOT NULL); CREATE TABLE dept_manager (emp_no int NOT NULL, dept_no char(4) NOT NULL, from_date date NOT NULL, to_date date NOT NULL, PRIMARY KEY(emp_no,dept_no)); CREATE TABLE titles (emp_no int NOT NULL, title varchar(50) NOT NULL, from_date date NOT NULL, to_date date, PRIMARY KEY(emp_no,title,from_date));\"}",
+                    "call_id": "call_8nhplEHufejMWEicnlAy2eaG",
+                    "name": "simplify_query",
+                    "type": "function_call",
+                    "id": "fc_0fe4d97da54a3382006af5dd9b54588196b440b062fea3b848",
+                    "status": "completed"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_0fe4d97da54a3382006af5dd99be68819687d353b4f7dee4ea",
+                "created_at": 1794497945.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_0fe4d97da54a3382006af5dd99be68819687d353b4f7dee4ea",
+            "tool_calls": [
+                {
+                    "name": "simplify_query",
+                    "args": {
+                        "query": "SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no JOIN salaries s ON s.emp_no = de.emp_no WHERE de.to_date = '9999-01-01' AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;",
+                        "schema": "CREATE TABLE departments (dept_no char(4) PRIMARY KEY, dept_name varchar(40) NOT NULL); CREATE TABLE dept_emp (emp_no int NOT NULL, dept_no char(4) NOT NULL, from_date date NOT NULL, to_date date NOT NULL, PRIMARY KEY(emp_no,dept_no)); CREATE TABLE salaries (emp_no int NOT NULL, salary int NOT NULL, from_date date NOT NULL, to_date date NOT NULL, PRIMARY KEY(emp_no,from_date)); CREATE TABLE employees (emp_no int PRIMARY KEY, birth_date date NOT NULL, first_name varchar(14) NOT NULL, last_name varchar(16) NOT NULL, gender enum('M','F') NOT NULL, hire_date date NOT NULL); CREATE TABLE dept_manager (emp_no int NOT NULL, dept_no char(4) NOT NULL, from_date date NOT NULL, to_date date NOT NULL, PRIMARY KEY(emp_no,dept_no)); CREATE TABLE titles (emp_no int NOT NULL, title varchar(50) NOT NULL, from_date date NOT NULL, to_date date, PRIMARY KEY(emp_no,title,from_date));"
+                    },
+                    "id": "call_8nhplEHufejMWEicnlAy2eaG",
+                    "type": "tool_call"
+                }
+            ],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 1402,
+                "output_tokens": 348,
+                "total_tokens": 1750,
+                "input_token_details": {
+                    "cache_creation": 0,
+                    "cache_read": 1363
+                },
+                "output_token_details": {
+                    "reasoning": 9
+                }
+            }
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": "```sql\nWITH active_departments AS (\n    SELECT d.dept_no, d.dept_name\n    FROM departments d\n    JOIN dept_emp de ON de.dept_no = d.dept_no\n    WHERE de.to_date = '9999-01-01'\n), active_salaries AS (\n    SELECT s.emp_no, s.salary\n    FROM salaries s\n    WHERE s.to_date = '9999-01-01'\n)\nSELECT ad.dept_name AS department, ROUND(AVG(as.salary), 2) AS average_salary\nFROM active_departments ad\nJOIN dept_emp de ON de.dept_no = ad.dept_no\nJOIN active_salaries as ON as.emp_no = de.emp_no\nGROUP BY ad.dept_no, ad.dept_name\nORDER BY average_salary DESC;\n```",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_8nhplEHufejMWEicnlAy2eaG",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "id": "rs_0fe4d97da54a3382006af5dda91c8481968df73650c7e0d23c",
+                    "summary": [],
+                    "type": "reasoning",
+                    "content": [],
+                    "encrypted_content": "gAAAAABq9d2uNEbnFD3r1kFHzjhxCB03srBVy3JPL35w9_CDF_84F10MIto_TfTfXbPTHW3hh_KUHuHs2c8esh5UB7SQcbEbJOsXpomYyRXpBlI17z-uSGjMPu_LJZq8qltQFn7qjZC5jMZE1St_NqpCOWYXCPx9ObuSghhEIPt7bvXBjypy2L8Jk9CA5f-38hWoKWHQ52iUCaga3hg7NLHFCKDGbFSkI8rDg-ad9qXtUHZPf_1Q_FsR-jNbv_HuPJf3PYZf46IB9YM992waX9QOtVU42KiabW0aa9WbK__WM15wGtPLVrA95H6tbZvINPkw-X7tYKeo4odAHqtvi-e9Yh_qWUXa53ILzmqYb14ZgQmS7BdE4n2wZRJ-sWcY-WPwvvCdCJG-FOAxHIIBagwvGKU3GkCqZ4ezkSkVPVL8BqwKmnDAV7FeO_O4bnJQDm1aVgP7NiD0tnZMldgziDoO5iJ06tTuyb2FwHmrx1sICYmpckluNnlobuP7q9padbw0EV9Mi4vu7HYUBhsbZVG4ramimknmaLhfDXlttMkQbFJCGo9oI78VWngfCAuPJS-g2z8EP_eop8jBgVawJ7wyK2RN3XqpLMyowMi-WMYbHSuO3NhexzRpMD6olqzpRfl39nFEzdswH4Ut6-MqR80yGtV2qd_tSeO9u9uyFxbvwcIv7Nk2XO2hqbmBnLFsmB8TkWgFDodpAQgO9hamzVhFsegDH7zcXzg8acBWeRNAXobCqJ_FXAy3iev_Wi0a7mpLK4z5NBikAvywNbl4hKBOECF5s59P-jtvPO5JqZM4DFsL-iuWMaZKSiHMljigVcWHvSD10791a1wTKoY1blaTHQzkgw340rG-noN2h27l1T2Hp_oEP3oKa15XnNEpVgFd1UNh8W9ZOL_pLf2bkZOUrkY8pXNulSun8An8H6icbhjdt3Kq4YlElgzcUH82R9v5kQZ5a4Ywxb_D_naYwOMbR6wXxoGX-sGsWNlLu9B-YAVB98h6mbNX9eiRgvD7E5ztG_ci6AOCawoHCicLMDbFNpXq9LBEddNVWioHLkJoKNDOckeBEluocfsZvE_HtIH9VAHUXbeDCKjM6t68TdICg7-b0lrtz5J8tZrbEse-KpJBcMwjG_7YvWtxwo0B4n-3j_KCPJ9RzAMadVpsnmt0TEtIu6sAkF-C5kJL5RJN_gUbDYzkyie6mi0xqb3IzEwRmXUnByigpAvSKSy1ppsEWbTqOK2uPA-BlVWaVouraN2_eX4BVvgST3zBLqvcrG-Vb7qzkls_v8HNTKhtIXSyHAoc01oN0xAecwDO09AHzXXdEA8OvzqAZQ0fVkjAZ9m1CVJsAUoAvfi_Q_3h0R5wxPW2MKrojQjHpMenQkNNoG7aF35SbUYP3DQHVeUKEHdId6wAt82Ed6_sJo8phc7OCGTWkx32Mv6YYe5cDhRU20UUP0yEaKLdy1ALpwMoQ-VCT9YnRbCM7vOVrxaZuj25nBEHEafo8T-gbRlVDCJzSeTq40WTGHAbu7y_aff2uWXw2nbBABfv2atqk0ZxWO-f5dvOZjxe2oHSFpUY4HWpPASVGHZmjprdzc_SiWeJpOO6yi2ShHNcEww2n13AYaVOTQdI8XxAYJSBd9C9RH48x9N9sm3Mefw-nwsastjDB7vDtt4am473mojMm64g_ReUBSaKLSMR0TVYpN6a7rvN0BmQGEDtnvc="
+                },
+                {
+                    "arguments": "{\"query\":\"SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no JOIN salaries s ON s.emp_no = de.emp_no WHERE de.to_date = '9999-01-01' AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;\"}",
+                    "call_id": "call_2R3jBPf1EEefNSiNtKiTsKWj",
+                    "name": "query_runner",
+                    "type": "function_call",
+                    "id": "fc_0fe4d97da54a3382006af5ddadd0d48196b97b6656146f1549",
+                    "status": "completed"
+                },
+                {
+                    "arguments": "{\"task\":\"Department wise Average Salaries (current salaries and active department assignments)\",\"query\":\"SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no JOIN salaries s ON s.emp_no = de.emp_no WHERE de.to_date = '9999-01-01' AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;\"}",
+                    "call_id": "call_6p2Ph720IyzkbBfePvFFDKv4",
+                    "name": "store_user_task",
+                    "type": "function_call",
+                    "id": "fc_0fe4d97da54a3382006af5ddadd0e4819695d73d757e7affec",
+                    "status": "completed"
+                },
+                {
+                    "arguments": "{\"query\":\"SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no JOIN salaries s ON s.emp_no = de.emp_no WHERE de.to_date = '9999-01-01' AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;\"}",
+                    "call_id": "call_PCvBNeHmnl7Op5bm47RA5aYB",
+                    "name": "generate_plotly_vizualizer_code",
+                    "type": "function_call",
+                    "id": "fc_0fe4d97da54a3382006af5ddadd0f081969fd053cddd1e0420",
+                    "status": "completed"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_0fe4d97da54a3382006af5dda826f481969dc011e055bba2dc",
+                "created_at": 1794497960.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_0fe4d97da54a3382006af5dda826f481969dc011e055bba2dc",
+            "tool_calls": [
+                {
+                    "name": "query_runner",
+                    "args": {
+                        "query": "SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no JOIN salaries s ON s.emp_no = de.emp_no WHERE de.to_date = '9999-01-01' AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;"
+                    },
+                    "id": "call_2R3jBPf1EEefNSiNtKiTsKWj",
+                    "type": "tool_call"
+                },
+                {
+                    "name": "store_user_task",
+                    "args": {
+                        "task": "Department wise Average Salaries (current salaries and active department assignments)",
+                        "query": "SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no JOIN salaries s ON s.emp_no = de.emp_no WHERE de.to_date = '9999-01-01' AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;"
+                    },
+                    "id": "call_6p2Ph720IyzkbBfePvFFDKv4",
+                    "type": "tool_call"
+                },
+                {
+                    "name": "generate_plotly_vizualizer_code",
+                    "args": {
+                        "query": "SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no JOIN salaries s ON s.emp_no = de.emp_no WHERE de.to_date = '9999-01-01' AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;"
+                    },
+                    "id": "call_PCvBNeHmnl7Op5bm47RA5aYB",
+                    "type": "tool_call"
+                }
+            ],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 1931,
+                "output_tokens": 381,
+                "total_tokens": 2312,
+                "input_token_details": {
+                    "cache_creation": 565,
+                    "cache_read": 1363
+                },
+                "output_token_details": {
+                    "reasoning": 24
+                }
+            }
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": "Request Completed. Result masked and not presented to LLM for privacy reasons",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_2R3jBPf1EEefNSiNtKiTsKWj",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": "{'_id': '6af5ddb5fec2e4bd8703b450'}",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_6p2Ph720IyzkbBfePvFFDKv4",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": "```js\nimport React from 'react';\nimport Plot from 'react-plotly.js';\n\nconst data = [\n  {\n    x: departments.map(dept => dept.department),\n    y: departments.map(dept => dept.average_salary),\n    type: 'bar',\n    marker: { color: 'blue' },\n  },\n];\n\nconst layout = {\n  title: 'Average Salary by Department',\n  xaxis: {\n    title: 'Department',\n  },\n  yaxis: {\n    title: 'Average Salary',\n  },\n};\n\nconst SalaryBarChart = ({ departments }) => {\n  return (\n    <Plot\n      data={data}\n      layout={layout}\n    />\n  );\n};\n\nexport default SalaryBarChart;\n```",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_PCvBNeHmnl7Op5bm47RA5aYB",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "arguments": "{\"plotly_code\":\"import React from 'react';\\nimport Plot from 'react-plotly.js';\\n\\nconst SalaryBarChart = ({ departments = [] }) => (\\n  <Plot\\n    data={[{\\n      x: departments.map(dept => dept.department),\\n      y: departments.map(dept => dept.average_salary),\\n      type: 'bar',\\n      marker: { color: 'blue' }\\n    }]}\\n    layout={{\\n      title: 'Current Average Salary by Department',\\n      xaxis: { title: 'Department' },\\n      yaxis: { title: 'Average Salary' }\\n    }}\\n  />\\n);\\n\\nexport default SalaryBarChart;\"}",
+                    "call_id": "call_lCjIBMC7KyUTuzjcKGBazaA7",
+                    "name": "put_plotly_code_in_metadata",
+                    "type": "function_call",
+                    "id": "fc_0fe4d97da54a3382006af5ddbaa3b08196afcf35b4488af67c",
+                    "status": "completed"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_0fe4d97da54a3382006af5ddb98dac8196a9b3204efa4f30f9",
+                "created_at": 1794497977.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_0fe4d97da54a3382006af5ddb98dac8196a9b3204efa4f30f9",
+            "tool_calls": [
+                {
+                    "name": "put_plotly_code_in_metadata",
+                    "args": {
+                        "plotly_code": "import React from 'react';\nimport Plot from 'react-plotly.js';\n\nconst SalaryBarChart = ({ departments = [] }) => (\n  <Plot\n    data={[{\n      x: departments.map(dept => dept.department),\n      y: departments.map(dept => dept.average_salary),\n      type: 'bar',\n      marker: { color: 'blue' }\n    }]}\n    layout={{\n      title: 'Current Average Salary by Department',\n      xaxis: { title: 'Department' },\n      yaxis: { title: 'Average Salary' }\n    }}\n  />\n);\n\nexport default SalaryBarChart;"
+                    },
+                    "id": "call_lCjIBMC7KyUTuzjcKGBazaA7",
+                    "type": "tool_call"
+                }
+            ],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 2529,
+                "output_tokens": 176,
+                "total_tokens": 2705,
+                "input_token_details": {
+                    "cache_creation": 598,
+                    "cache_read": 1928
+                },
+                "output_token_details": {
+                    "reasoning": 0
+                }
+            }
+        }
+    }
+]

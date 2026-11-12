@@ -551,3 +551,63 @@ WITH ActiveDepartments AS (SELECT dept_no, dept_name FROM departments), ActiveDe
 
 -- 2026-11-12 15:23:01
 WITH ActiveDepartments AS (SELECT dept_no, dept_name FROM departments), ActiveDeptEmp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01'), DeptSalary AS (SELECT a.dept_no, AVG(b.salary) AS average_salary FROM ActiveDeptEmp a JOIN ActiveSalaries b ON a.emp_no = b.emp_no GROUP BY a.dept_no) SELECT d.dept_name AS department, ROUND(ds.average_salary, 2) AS average_salary FROM ActiveDepartments d JOIN DeptSalary ds ON d.dept_no = ds.dept_no ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:17:12
+WITH ActiveDepartments AS (SELECT dept_no, dept_name FROM departments), ActiveDeptEmp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM ActiveDepartments d JOIN ActiveDeptEmp de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:20:02
+WITH ActiveDepartments AS (SELECT dept_no, dept_name FROM departments), ActiveDeptEmp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM ActiveDepartments d JOIN ActiveDeptEmp de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:20:50
+WITH ActiveDepartments AS (SELECT dept_no, dept_name FROM departments), ActiveDeptEmp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM ActiveDepartments d JOIN ActiveDeptEmp de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:24:34
+WITH ActiveDepartments AS (SELECT d.dept_no, d.dept_name FROM departments d), ActiveDeptEmp AS (SELECT de.dept_no, de.emp_no FROM dept_emp de WHERE de.to_date = '9999-01-01'), ActiveSalaries AS (SELECT s.emp_no, s.salary FROM salaries s WHERE s.to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM ActiveDepartments d JOIN ActiveDeptEmp de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:31:21
+WITH ActiveDepartments AS (SELECT d.dept_no, d.dept_name FROM departments d), ActiveDeptEmp AS (SELECT de.dept_no, de.emp_no FROM dept_emp de WHERE de.to_date = '9999-01-01'), ActiveSalaries AS (SELECT s.emp_no, s.salary FROM salaries s WHERE s.to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM ActiveDepartments d JOIN ActiveDeptEmp de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:32:32
+WITH ActiveDepartments AS (SELECT dept_no, dept_name FROM departments), ActiveDeptEmp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM ActiveDepartments d JOIN ActiveDeptEmp de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:36:35
+WITH ActiveDepartments AS (SELECT dept_no, dept_name FROM departments), ActiveDeptEmp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM ActiveDepartments d JOIN ActiveDeptEmp de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:40:05
+WITH ActiveDepartments AS (SELECT dept_no, dept_name FROM departments), ActiveDeptEmp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM ActiveDepartments d JOIN ActiveDeptEmp de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:42:39
+WITH ActiveDepartments AS (SELECT dept_no, dept_name FROM departments), ActiveDeptEmp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM ActiveDepartments d JOIN ActiveDeptEmp de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:51:56
+WITH ActiveDepartments AS (SELECT dept_no, dept_name FROM departments), ActiveDeptEmp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM ActiveDepartments d JOIN ActiveDeptEmp de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:54:20
+SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no AND de.to_date = '9999-01-01' JOIN salaries s ON s.emp_no = de.emp_no AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:56:05
+SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no AND de.to_date = '9999-01-01' JOIN salaries s ON s.emp_no = de.emp_no AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 18:56:52
+WITH active_dept_emp AS (SELECT dept_no, emp_no FROM dept_emp WHERE to_date = '9999-01-01'), active_salaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN active_dept_emp de ON de.dept_no = d.dept_no JOIN active_salaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 20:47:25
+WITH active_dept_emp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), active_salaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN active_dept_emp de ON de.dept_no = d.dept_no JOIN active_salaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 20:49:54
+SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON d.dept_no = de.dept_no JOIN salaries s ON de.emp_no = s.emp_no WHERE de.to_date = '9999-01-01' AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 20:58:56
+WITH ActiveDepartments AS (SELECT d.dept_no, d.dept_name FROM departments d), ActiveDeptEmp AS (SELECT de.emp_no, de.dept_no FROM dept_emp de WHERE de.to_date = '9999-01-01'), ActiveSalaries AS (SELECT s.emp_no, s.salary FROM salaries s WHERE s.to_date = '9999-01-01') SELECT ad.dept_name AS department, ROUND(AVG(asalary.salary), 2) AS average_salary FROM ActiveDepartments ad JOIN ActiveDeptEmp ade ON ade.dept_no = ad.dept_no JOIN ActiveSalaries asalary ON asalary.emp_no = ade.emp_no GROUP BY ad.dept_no, ad.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 21:02:09
+WITH ActiveDepartments AS (SELECT d.dept_no, d.dept_name FROM departments d), ActiveDeptEmp AS (SELECT de.emp_no, de.dept_no FROM dept_emp de WHERE de.to_date = '9999-01-01'), ActiveSalaries AS (SELECT s.emp_no, s.salary FROM salaries s WHERE s.to_date = '9999-01-01') SELECT ad.dept_name AS department, ROUND(AVG(asalary.salary), 2) AS average_salary FROM ActiveDepartments ad JOIN ActiveDeptEmp ade ON ade.dept_no = ad.dept_no JOIN ActiveSalaries asalary ON asalary.emp_no = ade.emp_no GROUP BY ad.dept_no, ad.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 21:06:11
+WITH ActiveDepartments AS (SELECT d.dept_no, d.dept_name FROM departments d), ActiveDeptEmp AS (SELECT de.emp_no, de.dept_no FROM dept_emp de WHERE de.to_date = '9999-01-01'), ActiveSalaries AS (SELECT s.emp_no, s.salary FROM salaries s WHERE s.to_date = '9999-01-01') SELECT ad.dept_name AS department, ROUND(AVG(asalary.salary), 2) AS average_salary FROM ActiveDepartments ad JOIN ActiveDeptEmp ade ON ade.dept_no = ad.dept_no JOIN ActiveSalaries asalary ON asalary.emp_no = ade.emp_no GROUP BY ad.dept_no, ad.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 21:09:26
+SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no JOIN salaries s ON s.emp_no = de.emp_no WHERE de.to_date = '9999-01-01' AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-12 21:16:57
+WITH active_departments AS (SELECT d.dept_no, d.dept_name FROM departments d), active_emp_dept AS (SELECT de.emp_no, de.dept_no FROM dept_emp de WHERE de.to_date = '9999-01-01'), active_salaries AS (SELECT s.emp_no, s.salary FROM salaries s WHERE s.to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM active_departments d JOIN active_emp_dept de ON d.dept_no = de.dept_no JOIN active_salaries s ON de.emp_no = s.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;

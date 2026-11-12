@@ -4,6 +4,7 @@ import sys
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool, InjectedToolArg
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from langchain_core.messages import message_to_dict
 # from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 import json
 from typing import *
@@ -13,11 +14,17 @@ from datetime import datetime
 import traceback
 import pandas as pd
 from simple_websocket.ws import Server
+from document_update import update_metadata
 
 # load the RAG components
-from vector_store import store_embeddings
+from vector_store import store_embeddings, store_embedding
 from document_search import search_similar
+from document_update import update_metadata
+from datetime import datetime
+from chat_logger import get_logger
 load_dotenv(override=True)
+
+logger = get_logger(__name__)
 
 # --------------------------------------------------------------------------- #
 # Azure OpenAI configuration.
@@ -134,10 +141,12 @@ def simplify_query(query: str,
     query_simplification_system_prompt = (
         "You are an expert sql simplification agent"
         "Simplify the given query into CTEs"
+        "**Generate only the SQL and no other texts"
     )
     prompt = f"""Query: {query}
 Schema: 
 {schema}
+```sql
 """
     subagent_messages = [
         SystemMessage(query_simplification_system_prompt),
@@ -155,8 +164,9 @@ def store_user_task(task:str,
     """Vectorizes and Stores the user task and associated SQL for retrieval of SQL query later
     **Must run after simplify_query produces a SQL query to store
     """
-    _ = store_embeddings(texts=[task], metadatas=[{'query':query, 'database':database}])
-    return "Embedding stored successfully"
+    mongo_task_id = store_embedding(text=task, 
+                                    metadata={'query':query, 'database':database})
+    return {"mongodb_object_id": str(mongo_task_id)}
 
 @tool
 def get_similar_tasks(task:str, 
@@ -167,12 +177,76 @@ def get_similar_tasks(task:str,
     """
     collections = search_similar(query=task, database=database)
     return collections
+
+@tool
+def generate_plotly_vizualizer_code(query:str,
+                                    ws:Annotated[Server | None, InjectedToolArg]=None
+                                    ) -> str:
+    """Generates a Plotly based code for a given query."""
+    llm = _subagent_llm(temperature=0)
+    prompt = f"""Based on the SQL query
+```sql
+{query}
+```
+Give the code to plot a plotly graph. The server is supposed to send the output as records oriented json from the dataframe.
+```js
+<Plot
+"""
+    messages = [
+        SystemMessage("You are an expert UI developer and data analyst who specializes in creating beautiful dashboard using plotly JS using plotly-react." + \
+                      "\n**Must generate only the plotly code and no other texts"),
+        HumanMessage(prompt)
+    ]
+    ai_message = llm.invoke(messages)
+    return str(ai_message.content)
+
+@tool
+def put_plotly_code_in_metadata(mongodb_object_id:str,
+                                plotly_code:str,
+                                ws:Annotated[Server | None, InjectedToolArg]=None
+                                ):
+    """Updates the metadata for mongodb entry for given mongodb_object_id and add the plotly code"""
+    result = update_metadata(object_id=mongodb_object_id,
+                    metadata={
+                        "plotly_code": plotly_code,
+                        "update_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        })
+    return {"matched":result.matched_count,
+            "modified":result.modified_count
+            }
+    
     
 
+def message_text(message: AIMessage) -> str:
+    """Return the visible text of a model reply, or "" if it has none.
+
+    Reasoning models return `content` as a list of blocks (e.g. a 'reasoning' block
+    followed by a 'text' block), so only the 'text' blocks are joined here.
+    """
+    if isinstance(message.content, str):
+        return message.content
+    return "".join(
+        block.get("text", "")
+        for block in message.content
+        if isinstance(block, dict) and block.get("type") == "text"
+    )
+
+
 def send_ws_message(server_message:Dict[Any, Any], ws:Server|None = None):
+    logger.info("ws_message sent=%s payload=%s", isinstance(ws, Server),
+                json.dumps(server_message, default=str, ensure_ascii=False))
     if isinstance(ws, Server):
         ws.send(json.dumps(server_message))
-    
+        
+def dump_messages(messages:List[SystemMessage | HumanMessage | AIMessage | ToolMessage]):
+    # no colons: Windows does not allow ':' in file names
+    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    serialized_messages = [
+    message_to_dict(message) for message in messages
+    ]
+    with open(f"./memory/{now}.json", "w", encoding="utf-8") as f:
+        json.dump(serialized_messages, f, indent=4, ensure_ascii=False, default=str)        
+        
 
 def orchestrator(user_task: str, 
                  database:str,
@@ -192,7 +266,9 @@ def orchestrator(user_task: str,
         query_runner, 
         simplify_query, 
         store_user_task,
-        get_similar_tasks
+        get_similar_tasks,
+        generate_plotly_vizualizer_code,
+        put_plotly_code_in_metadata
             ]
     TOOLS_BY_NAME = {t.name: t for t in SUBAGENTS}
 
@@ -224,6 +300,7 @@ def orchestrator(user_task: str,
     # sub-agents that receive the shared connection as an injected argument
     DB_TOOLS = {get_database_schema.name, query_runner.name}
     VECTORIZER_TOOLS = {store_user_task.name, get_similar_tasks.name}
+    logger.info("orchestrator start database=%s max_steps=%s task=%r", database, max_steps, user_task)
     try:
         for step in range(1, max_steps+1):
             print(f"\n[orchestrator] planning step {step}...")
@@ -234,16 +311,20 @@ def orchestrator(user_task: str,
             }, ws=ws)
             ai_message = orchestrator.invoke(messages)
             messages.append(ai_message)
+            logger.info("step=%d ai_message content=%s tool_calls=%s", step,
+                        json.dumps(ai_message.content, default=str, ensure_ascii=False),
+                        json.dumps(ai_message.tool_calls, default=str, ensure_ascii=False))
 
-            # No tool calls => the orchestrator is done and returned the answer.
+            # No tool calls and some text => the orchestrator has produced the final answer.
             if not ai_message.tool_calls:
-                # export the messages
-                with open("messages.json", "w") as f:
-                    message_json = [(elem.type, elem.text) for elem in messages]
-                    json.dump(message_json, f, indent=4)
-                # return str(ai_message.content), step
-                # for gpt-6.1-sol
-                return str(ai_message.content[0].get('text', "Orchestrator Model output seems to be of unexpected format")), step
+                final_answer = message_text(ai_message)
+                if final_answer:
+                    logger.info("orchestrator done step=%d final_answer=%r", step, final_answer)
+                    return final_answer, step
+                # Reasoning-only reply (no text, no tool calls): keep it in the history and ask again.
+                # max_steps still bounds the retries.
+                logger.warning("step=%d reply had no text and no tool calls; retrying", step)
+                continue
 
             # Execute each requested sub-agent and feed results back.
             for call in ai_message.tool_calls:
@@ -251,7 +332,7 @@ def orchestrator(user_task: str,
                 send_ws_message({"type_": "ProgressMessage",
                                  "toolName": call["name"],
                                  "step": step,
-                                 "content": f"Running {call["name"]}"
+                                 "content": f"""Running {call["name"]}({call["args"]})"""
                                  }, ws)
                 injected = {"ws": ws}
                 if call["name"] in DB_TOOLS:
@@ -263,6 +344,9 @@ def orchestrator(user_task: str,
                     if agent
                     else f"ERROR: unknown sub-agent '{call['name']}'"
                 )
+                logger.info("step=%d tool=%s args=%s result=%s", step, call["name"],
+                            json.dumps(call["args"], default=str, ensure_ascii=False),
+                            json.dumps(result, default=str, ensure_ascii=False))
                 messages.append(ToolMessage(content=result, tool_call_id=call["id"]))
                 send_ws_message({"type_":"ToolMessage",
                                 "toolName":call["name"],
@@ -270,8 +354,10 @@ def orchestrator(user_task: str,
                                 "content":result
                                 }, ws)
     finally:
+        dump_messages(messages)
         connected_db.close()
 
+    logger.warning("orchestrator hit max_steps=%s without a final answer", max_steps)
     return (
         "Reached the maximum number of steps without a final answer. "
         "Consider raising `max_steps` or simplifying the task."
@@ -283,4 +369,5 @@ if __name__ == '__main__':
         query = input("Enter your query. Press CTRL + C to quit: ")
         orchestrator_response = orchestrator(user_task=query)
         print("Agent Response::::\n", orchestrator_response)
+    
 

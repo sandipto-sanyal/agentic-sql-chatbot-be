@@ -1,11 +1,11 @@
 [
     [
         "system",
-        "You are an orchestrator that has access to specialized agents.\nAny query related to employees table: always use as per following flow logic.\nflowchart TD\n    subgraph DataExtractor\n        DE1[\"simplify_query\"]\n        DE2[\"query_runner\"]\n  \n    end\n    subgraph QuerySimilarityCache\n        QSC1[\"get_similar_tasks\"]\n        QSC2{\"Similar Tasks Found?\"}\n        QSC1 --> |\"similar task to sql map list\"|QSC2\n        QSC3[\"store_user_task\"]\n    end\n    A[\"user_task\"] --> |task| QSC1\n    A --> B[\"get_database_schema\"]\n    B --> |schema| DE1\n    QSC2 --> |yes|DE2\n    QSC2 --> |no|DE1\n    A --> |task|QSC3\n    DE1 --> |query|QSC3\n    \nFor any other query answer directly from your knowledge"
+        "You are an orchestrator that has access to specialized agents.\nAny query related to employees table: always use as per following flow logic.\nflowchart TD\n    subgraph DataExtractor\n        DE1[\"simplify_query\"]\n        DE2[\"query_runner\"]\n        DE1 --> |query|DE2\n  \n    end\n    subgraph QuerySimilarityCache\n        QSC1[\"get_similar_tasks\"]\n        QSC2{\"Similar Tasks Found?\"}\n        QSC1 --> |\"similar task to sql map list\"|QSC2\n        QSC3[\"store_user_task\"]\n    end\n\n    subgraph DashboardCreator\n        DC1[\"generate_plotly_vizualizer_code\"] --> |plotly_code|DC2[\"put_plotly_code_in_metadata\"]\n    end\n    A[\"user_task\"] --> |task| QSC1\n    A --> B[\"get_database_schema\"]\n    B --> |schema| DE1\n    QSC2 --> |yes|DE2_Dummy\n    DE2_Dummy --> |query|DE2\n    QSC2 --> |no|DE1\n    A --> |task|QSC3\n    DE1 --> |query|QSC3\n    DE1 --> |query|DC1\n\n    style DE2_Dummy fill:none,stroke:none,color:transparent\n    \nFor any other query answer directly from your knowledge"
     ],
     [
         "human",
-        "Average salaries per department"
+        "Department wise Average Salaries"
     ],
     [
         "ai",
@@ -29,6 +29,6 @@
     ],
     [
         "ai",
-        "The query for **average current salary per department**, sorted from highest to lowest, completed successfully.\n\nIt uses current department assignments and salary records. The results were masked for privacy, so I can\u2019t display the salary figures here."
+        "The department-wise average salary query has completed, using **current employees and their current salaries**, sorted from highest to lowest average.\n\nThe results are privacy-masked, so I can\u2019t display the salary figures here."
     ]
 ]

@@ -4,9 +4,11 @@ import simple_websocket
 from typing import *
 import json
 from employee_agentic_chatbot import orchestrator
-
+from chat_logger import get_logger
+import traceback
 app = Flask(__name__)
 sock = Sock(app)
+logger = get_logger(__name__)
 
 # Store state: which clients are in which rooms
 sessions:Dict[simple_websocket.ws.Server, str] = {}  # {ws: room_name}
@@ -27,9 +29,18 @@ def websocket(ws:simple_websocket.ws.Server):
         while True:
             msg = str(ws.receive())
             msg = json.loads(msg)
-            orchestrator_response, step = orchestrator(user_task=msg['task'], 
-                                                       database=msg['database'],
-                                                       ws=ws)
+            orchestrator_response, step = "", -1
+            try:
+                orchestrator_response, step = orchestrator(user_task=msg['task'], 
+                                                        database=msg['database'],
+                                                        ws=ws)
+            except Exception:
+                orchestrator_response = "Something went wrong while answering"
+                step = -1
+                tb_text = traceback.format_exc()
+                logger.exception(tb_text)
+
+                
             websocket_response:WebsocketResponseType = {
                 'type_':"OrchestratorMessage",
                 'content':orchestrator_response,
