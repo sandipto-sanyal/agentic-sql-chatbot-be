@@ -27,7 +27,9 @@ def websocket(ws:simple_websocket.ws.Server):
         while True:
             msg = str(ws.receive())
             msg = json.loads(msg)
-            orchestrator_response, step = orchestrator(user_task=msg['task'], ws=ws)
+            orchestrator_response, step = orchestrator(user_task=msg['task'], 
+                                                       database=msg['database'],
+                                                       ws=ws)
             websocket_response:WebsocketResponseType = {
                 'type_':"OrchestratorMessage",
                 'content':orchestrator_response,

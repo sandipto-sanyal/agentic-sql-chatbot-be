@@ -55,33 +55,31 @@ def _subagent_llm(temperature: float) -> AzureChatOpenAI | ChatOpenAI:
 # --------------------------------------------------------------------------- #
 
 @tool
-def get_database_schema(ws: Annotated[Server | None, InjectedToolArg] = None) -> str:
+def get_database_schema(db: Annotated[MySQLConnector, InjectedToolArg],
+                        ws: Annotated[Server | None, InjectedToolArg] = None) -> str:
     '''Gets the database schema (CREATE TABLE DDL for every table) for the employees db.
     ** This agent has to be mandatorily run first before query_runner
     '''
     print("\t[get_database_schema] invoked")
-    employees_db = MySQLConnector(database_name="employees")
-    try:
-        # 1. List all tables in the database
-        tables = employees_db.execute_query("SHOW TABLES;")
-        # SHOW TABLES returns rows like {"Tables_in_employees": "departments"}
+    # 1. List all tables in the database
+    tables = db.execute_query("SHOW TABLES;")
+    # SHOW TABLES returns rows like {"Tables_in_employees": "departments"}
 
-        # 2. Get the full DDL for each table
-        schema_parts = []
-        if isinstance(tables, pd.DataFrame):
-            for index, row in tables.iterrows():
-                name = row['Tables_in_employees']
-                ddl = employees_db.execute_query(f"SHOW CREATE TABLE `{name}`;")
-                # SHOW CREATE TABLE returns {"Table": ..., "Create Table": "CREATE TABLE ..."}
-                if isinstance(ddl, pd.DataFrame) and ddl.iloc[0].get("Create Table"):
-                    schema_parts.append(ddl.iloc[0]["Create Table"])
-        
-        return "\n\n".join(schema_parts)
-    finally:
-        employees_db.close()
+    # 2. Get the full DDL for each table
+    schema_parts = []
+    if isinstance(tables, pd.DataFrame):
+        for index, row in tables.iterrows():
+            name = row['Tables_in_employees']
+            ddl = db.execute_query(f"SHOW CREATE TABLE `{name}`;")
+            # SHOW CREATE TABLE returns {"Table": ..., "Create Table": "CREATE TABLE ..."}
+            if isinstance(ddl, pd.DataFrame) and ddl.iloc[0].get("Create Table"):
+                schema_parts.append(ddl.iloc[0]["Create Table"])
+
+    return "\n\n".join(schema_parts)
 
 @tool
 def query_runner(query: str,
+                 db: Annotated[MySQLConnector, InjectedToolArg],
                  ws: Annotated[Server | None, InjectedToolArg] = None):
     '''Runs a query in the employees database'''
     print("\t[query_runner] invoked")
@@ -98,10 +96,9 @@ def query_runner(query: str,
         'content': "Connecting to DB"
         
     })
-    employees_db = MySQLConnector(database_name="employees")
     try:
         content = f"""Running query:
-```sql        
+```sql
 {query}
 ```"""
         send_ws_message(server_message={
@@ -110,20 +107,23 @@ def query_runner(query: str,
                 'step': None,
                 'content': content
             }, ws=ws)
-        query_result = employees_db.execute_query(query)
+        query_result = db.execute_query(query)
         if isinstance(query_result, pd.DataFrame):
+            markdown = f"""# Final Answer
+## Data
+{query_result.astype(str).to_markdown(index=False)}
+({len(query_result)} Rows, {len(query_result.columns)} Columns)
+"""
             send_ws_message(server_message={
-                            'type_': 'SubagentMessage',
+                            'type_': 'QueryRunnerMessage',
                             'toolname':'query_runner',
                             'step': None,
-                            'content': f"Fetched: {len(query_result)} results"
+                            'content': markdown
                         }, ws=ws)
-            return query_result.astype(str).to_markdown(index=False)
+            return "Request Completed. Result masked and not presented to LLM for privacy reasons"
     except:
         return f"Error getting schema:\n{traceback.format_exc()}"
-    finally:
-        employees_db.close()
-        
+
 
 @tool
 def simplify_query(query: str,
@@ -150,19 +150,22 @@ Schema:
 @tool
 def store_user_task(task:str,
                     query:str,
+                    database:Annotated[str, InjectedToolArg],
                     ws:Annotated[Server | None, InjectedToolArg]=None):
     """Vectorizes and Stores the user task and associated SQL for retrieval of SQL query later
     **Must run after simplify_query produces a SQL query to store
     """
-    _ = store_embeddings(texts=[task], metadatas=[{'query':query}])
+    _ = store_embeddings(texts=[task], metadatas=[{'query':query, 'database':database}])
     return "Embedding stored successfully"
 
 @tool
-def get_similar_tasks(task:str, ws:Annotated[Server | None, InjectedToolArg]=None):
+def get_similar_tasks(task:str, 
+                      database:Annotated[str, InjectedToolArg],
+                      ws:Annotated[Server | None, InjectedToolArg]=None):
     """Searches similar task user presented to the chatbot and retrieves the SQL associated
     **Must run before simplify_query so that we do not re-compute the SQL for task which user has already asked before.
     """
-    collections = search_similar(query=task)
+    collections = search_similar(query=task, database=database)
     return collections
     
 
@@ -171,7 +174,9 @@ def send_ws_message(server_message:Dict[Any, Any], ws:Server|None = None):
         ws.send(json.dumps(server_message))
     
 
-def orchestrator(user_task: str, max_steps: int = 8,
+def orchestrator(user_task: str, 
+                 database:str,
+                 max_steps: int = 8,
                  ws:Server|None=None) -> Tuple[str, int]:
     """Drive the multi-agent workflow until the orchestrator produces a final answer."""
     with open(ORCHESTRATOR_FLOW_MMD, "r") as f:
@@ -212,46 +217,60 @@ def orchestrator(user_task: str, max_steps: int = 8,
         SystemMessage(ORCHESTRATOR_SYSTEM_PROMPT),
         HumanMessage(user_task),
     ]
+    # One database connection per orchestrator invocation, shared by all sub-agents
+    # that need it. MySQLConnector connects lazily, so no round-trip happens until
+    # the first query runs.
+    connected_db = MySQLConnector(database_name=database)
+    # sub-agents that receive the shared connection as an injected argument
+    DB_TOOLS = {get_database_schema.name, query_runner.name}
+    VECTORIZER_TOOLS = {store_user_task.name, get_similar_tasks.name}
+    try:
+        for step in range(1, max_steps+1):
+            print(f"\n[orchestrator] planning step {step}...")
+            send_ws_message(server_message={
+                "type_":"ProgressMessage",
+                "content": f"[orchestrator] planning step {step}",
+                "step": step
+            }, ws=ws)
+            ai_message = orchestrator.invoke(messages)
+            messages.append(ai_message)
 
-    for step in range(1, max_steps+1):
-        print(f"\n[orchestrator] planning step {step}...")
-        send_ws_message(server_message={
-            "type_":"ProgressMessage",
-            "content": f"[orchestrator] planning step {step}",
-            "step": step
-        }, ws=ws)
-        ai_message = orchestrator.invoke(messages)
-        messages.append(ai_message)
+            # No tool calls => the orchestrator is done and returned the answer.
+            if not ai_message.tool_calls:
+                # export the messages
+                with open("messages.json", "w") as f:
+                    message_json = [(elem.type, elem.text) for elem in messages]
+                    json.dump(message_json, f, indent=4)
+                # return str(ai_message.content), step
+                # for gpt-6.1-sol
+                return str(ai_message.content[0].get('text', "Orchestrator Model output seems to be of unexpected format")), step
 
-        # No tool calls => the orchestrator is done and returned the answer.
-        if not ai_message.tool_calls:
-            # export the messages
-            with open("messages.json", "w") as f:
-                message_json = [(elem.type, elem.text) for elem in messages]
-                json.dump(message_json, f, indent=4)
-            # return str(ai_message.content), step
-            # for gpt-6.1-sol
-            return str(ai_message.content[0].get('text', "Orchestrator Model output seems to be of unexpected format")), step
-
-        # Execute each requested sub-agent and feed results back.
-        for call in ai_message.tool_calls:
-            agent = TOOLS_BY_NAME.get(call["name"])
-            send_ws_message({"type_": "ProgressMessage",
-                             "toolName": call["name"],
-                             "step": step,
-                             "content": f"Running {call["name"]}"
-                             }, ws)
-            result = (
-                agent.invoke({**call["args"], "ws": ws})
-                if agent
-                else f"ERROR: unknown sub-agent '{call['name']}'"
-            )
-            messages.append(ToolMessage(content=result, tool_call_id=call["id"]))
-            send_ws_message({"type_":"ToolMessage",
-                            "toolName":call["name"],
-                            "step": step,
-                            "content":result
-                            }, ws)
+            # Execute each requested sub-agent and feed results back.
+            for call in ai_message.tool_calls:
+                agent = TOOLS_BY_NAME.get(call["name"])
+                send_ws_message({"type_": "ProgressMessage",
+                                 "toolName": call["name"],
+                                 "step": step,
+                                 "content": f"Running {call["name"]}"
+                                 }, ws)
+                injected = {"ws": ws}
+                if call["name"] in DB_TOOLS:
+                    injected["db"] = connected_db
+                elif call["name"] in VECTORIZER_TOOLS:
+                    injected["database"] = database
+                result = (
+                    agent.invoke({**call["args"], **injected})
+                    if agent
+                    else f"ERROR: unknown sub-agent '{call['name']}'"
+                )
+                messages.append(ToolMessage(content=result, tool_call_id=call["id"]))
+                send_ws_message({"type_":"ToolMessage",
+                                "toolName":call["name"],
+                                "step": step,
+                                "content":result
+                                }, ws)
+    finally:
+        connected_db.close()
 
     return (
         "Reached the maximum number of steps without a final answer. "

@@ -34,6 +34,7 @@ load_dotenv(override=True)
 EMBEDDING_FIELD = "embedding"
 TEXT_FIELD = "text"
 VECTOR_INDEX_NAME = "embedding_vector_index"
+METADATA_DATABASE_INDEX_NAME = "metadata_database_index"
 # Must match the output size of the embedding deployment
 # (text-embedding-3-small -> 1536).
 EMBEDDING_DIMENSIONS = int(os.getenv("EMBEDDING_DIMENSIONS", "1536"))
@@ -85,6 +86,16 @@ def ensure_vector_index(
             ],
         }
     )
+
+
+def ensure_metadata_index(collection: Optional[Collection] = None) -> str:
+    """Create a regular index on `metadata.database` so searches can filter by it.
+
+    Safe to call repeatedly: pymongo's create_index is a no-op when the index
+    already exists. Returns the index name.
+    """
+    coll = collection if collection is not None else get_collection()
+    return coll.create_index([("metadata.database", 1)], name=METADATA_DATABASE_INDEX_NAME)
 
 
 def _build_doc(
@@ -163,8 +174,9 @@ def store_embeddings(
 if __name__ == "__main__":
     text = "python is great"
     ensure_vector_index()                       # once, creates the vector index
+    ensure_metadata_index()                     # once, creates the metadata.database index
     text_len = store_embeddings(
         texts=[text],
-        metadatas=[{"type":"sample message"}]
+        metadatas=[{"type":"sample message", "database":"testing"}]
         )
     

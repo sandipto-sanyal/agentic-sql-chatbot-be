@@ -35,6 +35,8 @@ The `.env` points at **Azure Cosmos DB for MongoDB (vCore)**. The steps below we
 
 Prerequisites: documents are stored with `store_embedding` / `store_embeddings` from `vector_store.py`, and `ensure_vector_index()` has been run once for the collection.
 
+Learn More [Here](https://learn.microsoft.com/en-us/azure/documentdb/full-text-search-hybrid)
+
 ## Method 1: Vector (semantic) search
 
 Finds documents by meaning. The query text is embedded, then the nearest stored vectors are returned.

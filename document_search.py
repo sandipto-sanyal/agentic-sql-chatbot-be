@@ -5,14 +5,18 @@ load_dotenv(override=True)
 import os
 SEARCH_SCORE_THRESHOLD = float(os.environ.get("SEARCH_SCORE_THRESHOLD","0.90"))
 
-def search_similar(query: str, k: int = 5):
+def search_similar(query: str, k: int = 5, database:str|None=None):
     """This outsources the cosine vector search"""
     qv = embed_query(query)
+    cosmos_search = {"vector": qv, "path": "embedding", "k": k}
+    if database is not None:
+        # restrict the vector search to rows stored for this database
+        cosmos_search["filter"] = {"metadata.database": {"$eq": database}}
     pipeline = [
-        {"$search": {"cosmosSearch": {"vector": qv, "path": "embedding", "k": k},
+        {"$search": {"cosmosSearch": cosmos_search,
                      "returnStoredSource": True}},
         {"$project": {
-            "_id":0,
+            "_id":1,
             "text": 1, "metadata": 1, "score": {"$meta": "searchScore"}}},
         {"$match": {"score": {"$gte": SEARCH_SCORE_THRESHOLD}}}
     ]
