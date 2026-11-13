@@ -176,11 +176,12 @@ def get_similar_tasks(task:str,
 
 @tool
 def generate_plotly_vizualizer_code(query:str,
+                                    task:str,
                                     ws:Annotated[Server | None, InjectedToolArg]=None
                                     ) -> Dict[str, str]:
     """Generates a Plotly based code for a given query."""
     llm = _subagent_llm(temperature=0)
-    plotly_code_prompt = open_prompt_file("user_prompts/generate_plotly_vizualizer_code.md",query=query)
+    plotly_code_prompt = open_prompt_file("user_prompts/generate_plotly_vizualizer_code.md",query=query, task=task)
     messages = [
         SystemMessage(open_prompt_file("system_prompts/generate_plotly_vizualizer_code.md")),
         HumanMessage(plotly_code_prompt)

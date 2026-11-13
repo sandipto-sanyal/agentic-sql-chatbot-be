@@ -653,3 +653,24 @@ WITH current_salaries AS (SELECT e.gender, s.salary FROM employees e JOIN salari
 
 -- 2026-11-13 19:54:38
 WITH current_salaries AS (SELECT e.gender, s.salary FROM employees e JOIN salaries s ON s.emp_no = e.emp_no WHERE s.to_date = '9999-01-01'), ranked_salaries AS (SELECT gender, salary, ROW_NUMBER() OVER (PARTITION BY gender ORDER BY salary) AS rn, COUNT(*) OVER (PARTITION BY gender) AS cnt FROM current_salaries) SELECT gender, AVG(salary) AS median_salary FROM ranked_salaries WHERE rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2)) GROUP BY gender ORDER BY gender;
+
+-- 2026-11-13 21:25:41
+WITH ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE from_date <= CURDATE() AND to_date > CURDATE()), EmployeeAges AS (SELECT emp_no, TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age FROM employees) SELECT ea.age, COUNT(*) AS employee_count, ROUND(AVG(s.salary), 2) AS average_salary, MIN(s.salary) AS minimum_salary, MAX(s.salary) AS maximum_salary, ROUND(STDDEV_POP(s.salary), 2) AS salary_stddev FROM EmployeeAges ea JOIN ActiveSalaries s ON ea.emp_no = s.emp_no GROUP BY ea.age ORDER BY ea.age;
+
+-- 2026-11-13 21:27:32
+WITH EmployeeAges AS (SELECT emp_no, TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age FROM employees), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE from_date <= CURDATE() AND to_date > CURDATE()) SELECT ea.age, AVG(s.salary) AS mean_salary, COUNT(*) AS employee_count FROM EmployeeAges ea JOIN ActiveSalaries s ON ea.emp_no = s.emp_no GROUP BY ea.age ORDER BY ea.age;
+
+-- 2026-11-13 21:36:01
+WITH CurrentSalaries AS (SELECT e.emp_no, e.birth_date, s.salary FROM employees e JOIN salaries s ON e.emp_no = s.emp_no WHERE s.from_date <= CURDATE() AND s.to_date > CURDATE()), AgeSalary AS (SELECT TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age, salary FROM CurrentSalaries) SELECT age, AVG(salary) AS mean_salary FROM AgeSalary GROUP BY age ORDER BY age;
+
+-- 2026-11-13 21:36:47
+WITH CurrentSalaries AS (SELECT e.emp_no, e.birth_date, s.salary FROM employees e JOIN salaries s ON e.emp_no = s.emp_no WHERE s.from_date <= CURDATE() AND s.to_date > CURDATE()), AgeSalary AS (SELECT TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age, salary FROM CurrentSalaries) SELECT age, AVG(salary) AS mean_salary FROM AgeSalary GROUP BY age ORDER BY age;
+
+-- 2026-11-13 21:41:35
+WITH CurrentSalaries AS (SELECT e.emp_no, e.birth_date, s.salary FROM employees e JOIN salaries s ON e.emp_no = s.emp_no WHERE s.from_date <= CURDATE() AND s.to_date > CURDATE()), AgeSalary AS (SELECT TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age, salary FROM CurrentSalaries) SELECT age, AVG(salary) AS mean_salary FROM AgeSalary GROUP BY age ORDER BY age;
+
+-- 2026-11-13 21:43:31
+WITH EmployeeAges AS (SELECT emp_no, TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age FROM employees), CurrentSalaries AS (SELECT emp_no, salary FROM salaries WHERE from_date <= CURDATE() AND to_date > CURDATE()) SELECT age, AVG(cs.salary) AS mean_salary FROM EmployeeAges ea JOIN CurrentSalaries cs ON cs.emp_no = ea.emp_no GROUP BY age ORDER BY age;
+
+-- 2026-11-13 21:44:24
+WITH EmployeeAges AS (SELECT emp_no, TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age FROM employees), CurrentSalaries AS (SELECT emp_no, salary FROM salaries WHERE from_date <= CURDATE() AND to_date > CURDATE()) SELECT age, AVG(cs.salary) AS mean_salary FROM EmployeeAges ea JOIN CurrentSalaries cs ON cs.emp_no = ea.emp_no GROUP BY age ORDER BY age;
