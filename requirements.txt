@@ -16,3 +16,4 @@ tabulate
 pymongo>=4.6.0
 azure-cosmos 
 langchain-azure-cosmosdb
+flask-cors

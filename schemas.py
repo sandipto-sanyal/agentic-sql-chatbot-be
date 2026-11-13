@@ -9,3 +9,4 @@ class SimilarDocumentType(TypedDict):
     _id: str
     text:str
     metadata:MetadataType
+    mongodb_object_id:str

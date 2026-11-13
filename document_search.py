@@ -27,7 +27,7 @@ def search_similar(query: str, k: int = 5, database:str|None=None) -> List[Simil
     ]
     documents:List[SimilarDocumentType] = get_collection().aggregate(pipeline)
     
-    return [{**doc, "_id": str(doc["_id"])} for doc in documents]
+    return [{**doc, "_id": str(doc["_id"]), "mongodb_object_id":str(doc["_id"])} for doc in documents]
     
 
 if __name__ == "__main__":

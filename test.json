@@ -1,0 +1,13 @@
+{
+  "_id": {
+    "$oid": "6af71da97d3c37189e2ce314"
+  },
+  "text": "Median salaries per employee gender (current salary records with to_date = '9999-01-01')",
+  "metadata": {
+    "query": "WITH current_salaries AS (SELECT e.gender, s.salary FROM employees e JOIN salaries s ON s.emp_no = e.emp_no WHERE s.to_date = '9999-01-01'), ranked_salaries AS (SELECT gender, salary, ROW_NUMBER() OVER (PARTITION BY gender ORDER BY salary) AS rn, COUNT(*) OVER (PARTITION BY gender) AS cnt FROM current_salaries) SELECT gender, AVG(salary) AS median_salary FROM ranked_salaries WHERE rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2)) GROUP BY gender ORDER BY gender;",
+    "database": "employees",
+    "plotly_code": "```json\n[{\n    \"x\": \"gender\",\n    \"y\": \"median_salary\",\n    \"text\": \"median_salary\",\n    \"type\": \"bar\"\n}]\n```",
+    "dashboard_description": "Median current salaries by employee gender, using salary records with to_date = '9999-01-01'.",
+    "update_timestamp": "2026-11-13 19:54:57"
+  }
+}

@@ -71,8 +71,13 @@ def update_metadata(
 
 
 if __name__ == "__main__":
+    plotly_code = '''[{
+        "x":"department",
+        "y":"average_salary",
+        "type":"bar"
+        }]'''
     result = update_metadata(
-        object_id="6af569c9a4052c5ddc00b7fc",          # replace with a real _id
-        metadata={"plotly_code": "test plotly js code"},
+        object_id="6af6b2a4238e3ba5a3054f40",          # replace with a real _id
+        metadata={"plotly_code": plotly_code},
     )
     print(f"matched={result.matched_count} modified={result.modified_count}")

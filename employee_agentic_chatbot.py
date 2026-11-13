@@ -43,6 +43,11 @@ ORCHESTRATOR_MODEL = os.environ["ORCHESTRATOR_MODEL"]
 SUBAGENT_MODEL = os.environ["SUBAGENT_MODEL"]
 ORCHESTRATOR_FLOW_MMD = os.environ['ORCHESTRATOR_FLOW_MMD']
 
+def open_prompt_file(path:str, **kwargs)-> str:
+    with open(path, "r", encoding="utf-8") as f:
+        prompt_template = f.read()
+    return prompt_template.format(**kwargs)
+
 def _subagent_llm(temperature: float) -> AzureChatOpenAI | ChatOpenAI:
     # low temperature: precise and concise output
     # high temperature: creative varied output
@@ -138,16 +143,8 @@ def simplify_query(query: str,
                    ws: Annotated[Server | None, InjectedToolArg] = None) -> str:
     """This method will simplify a complex query forming multiple joins or timeout is faced"""
     subagent_llm = _subagent_llm(temperature=0.8)
-    query_simplification_system_prompt = (
-        "You are an expert sql simplification agent"
-        "Simplify the given query into CTEs"
-        "**Generate only the SQL and no other texts"
-    )
-    prompt = f"""Query: {query}
-Schema: 
-{schema}
-```sql
-"""
+    query_simplification_system_prompt = open_prompt_file("system_prompts/simplify_query.md")
+    prompt = open_prompt_file("user_prompts/simplify_query.md", query=query, schema=schema)
     subagent_messages = [
         SystemMessage(query_simplification_system_prompt),
         HumanMessage(prompt)
@@ -181,34 +178,39 @@ def get_similar_tasks(task:str,
 @tool
 def generate_plotly_vizualizer_code(query:str,
                                     ws:Annotated[Server | None, InjectedToolArg]=None
-                                    ) -> str:
+                                    ) -> Dict[str, str]:
     """Generates a Plotly based code for a given query."""
     llm = _subagent_llm(temperature=0)
-    prompt = f"""Based on the SQL query
-```sql
-{query}
-```
-Give the code to plot a plotly graph. The server is supposed to send the output as records oriented json from the dataframe.
-```js
-<Plot
-"""
+    plotly_code_prompt = open_prompt_file("user_prompts/generate_plotly_vizualizer_code.md",query=query)
     messages = [
-        SystemMessage("You are an expert UI developer and data analyst who specializes in creating beautiful dashboard using plotly JS using plotly-react." + \
-                      "\n**Must generate only the plotly code and no other texts"),
-        HumanMessage(prompt)
+        SystemMessage(open_prompt_file("system_prompts/generate_plotly_vizualizer_code.md")),
+        HumanMessage(plotly_code_prompt)
     ]
-    ai_message = llm.invoke(messages)
-    return str(ai_message.content)
+    plotly_code = llm.invoke(messages)
+    
+    # generate dashboard description
+    dashboard_description_prompt = open_prompt_file("user_prompts/generate_plotly_vizualizer_code_description.md", query=query)
+    messages = [
+        SystemMessage(open_prompt_file("system_prompts/generate_plotly_vizualizer_code_description.md")),
+        HumanMessage(dashboard_description_prompt)
+    ]
+    dashboard_description = llm.invoke(messages)
+    return {
+        "plotly_code": str(plotly_code.content),
+        "dashboard_description":str(dashboard_description.content)
+    }
 
 @tool
 def put_plotly_code_in_metadata(mongodb_object_id:str,
                                 plotly_code:str,
+                                dashboard_description:str,
                                 ws:Annotated[Server | None, InjectedToolArg]=None
                                 ):
     """Updates the metadata for mongodb entry for given mongodb_object_id and add the plotly code"""
     result = update_metadata(object_id=mongodb_object_id,
                     metadata={
                         "plotly_code": plotly_code,
+                        "dashboard_description":dashboard_description,
                         "update_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         })
     return {"matched":result.matched_count,
@@ -255,12 +257,7 @@ def orchestrator(user_task: str,
     """Drive the multi-agent workflow until the orchestrator produces a final answer."""
     with open(ORCHESTRATOR_FLOW_MMD, "r") as f:
         flow = f.read()
-    ORCHESTRATOR_SYSTEM_PROMPT = "\n".join((
-        "You are an orchestrator that has access to specialized agents.",
-        "Any query related to employees table: always use as per following flow logic.",
-        "{flow}".format(flow=flow),
-        "For any other query answer directly from your knowledge"
-    ))
+    ORCHESTRATOR_SYSTEM_PROMPT = open_prompt_file("./system_prompts/orchestrator.md", flow=flow)
     SUBAGENTS = [
         get_database_schema, 
         query_runner, 
