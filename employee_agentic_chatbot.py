@@ -121,9 +121,8 @@ def query_runner(query: str,
             }, ws=ws)
         query_result = db.execute_query(query)
         if isinstance(query_result, pd.DataFrame):
-            markdown = f"""# Final Answer
-## Data
-{query_result.astype(str).to_markdown(index=False)}
+            markdown = f"""## Data
+{query_result.head(50).astype(str).to_markdown(index=False)}
 ({len(query_result)} Rows, {len(query_result.columns)} Columns)
 """
             send_ws_message(server_message={
