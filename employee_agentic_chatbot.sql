@@ -749,3 +749,6 @@ SELECT e.emp_no, e.first_name, e.last_name, s.salary FROM employees e JOIN salar
 
 -- 2026-11-15 23:04:51
 WITH annual_hires AS (SELECT YEAR(hire_date) AS hire_year, COUNT(*) AS hires FROM employees GROUP BY YEAR(hire_date)), hiring_changes AS (SELECT hire_year, hires, LAG(hires) OVER (ORDER BY hire_year) AS previous_year_hires FROM annual_hires) SELECT hire_year, hires, hires - previous_year_hires AS yoy_change, ROUND(100.0 * (hires - previous_year_hires) / NULLIF(previous_year_hires, 0), 2) AS yoy_change_pct FROM hiring_changes ORDER BY hire_year;
+
+-- 2026-11-15 23:14:11
+WITH RECURSIVE bounds AS (SELECT YEAR(MIN(from_date)) AS start_year, YEAR(MAX(CASE WHEN to_date < '9999-01-01' THEN to_date ELSE from_date END)) AS end_year FROM dept_emp), years AS (SELECT start_year AS yr FROM bounds UNION ALL SELECT yr + 1 FROM years CROSS JOIN bounds WHERE yr < end_year), snapshots AS (SELECT yr, STR_TO_DATE(CONCAT(yr, '-12-31'), '%Y-%m-%d') AS snapshot_date FROM years) SELECT s.yr AS year, e.gender, COUNT(DISTINCT e.emp_no) AS active_employees FROM snapshots s JOIN dept_emp d ON d.from_date <= s.snapshot_date AND d.to_date > s.snapshot_date JOIN employees e ON e.emp_no = d.emp_no GROUP BY s.yr, e.gender ORDER BY s.yr, e.gender;

@@ -165,14 +165,5 @@ def get_data(database:str,
         }
 
 if __name__ == '__main__':
-    with open("test.json", "r", encoding='utf-8') as f:
-        test_data = json.load(f)
-    query = test_data['metadata']['query']
- 
-    plotly_code = test_data['metadata']['plotly_code']
-    dashboard_data = get_data(
-        database = "employees",
-        query=query,
-        trace_directives=plotly_code
-    )
+    print(get_dashboards(database="employees", id="6af99eab2c69011f4df42fd7"))
     pass

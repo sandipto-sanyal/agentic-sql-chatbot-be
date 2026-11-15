@@ -50,13 +50,22 @@ def get_dashobards():
     dashboards = get_dashboards(database, id)
     return jsonify(dashboards), 200
 
-@app.route("/api/get_data", methods=["POST"])
+@app.route("/api/get_data", methods=["GET"])
 def get_data_route():
-    database = request.json['database']
-    query = request.json['query']
-    plotly_code = request.json['plotly_code']
-    data = get_data(database=database, query=query, trace_directives=plotly_code)
-    return jsonify(data), 200
+    database = request.args.get('database')
+    mongodb_object_id = request.args.get('mongodb_object_id')
+    if not database or not mongodb_object_id:
+        return jsonify({"error": "database and mongodb_object_id are required"}), 400
+    dashboards = get_dashboards(database, id=mongodb_object_id)
+    if not dashboards:
+        return jsonify({"error": "dashboard not found"}), 404
+    metadata = dashboards[0]['metadata']
+    data = get_data(database=database,
+                    query=metadata['query'],
+                    trace_directives=metadata['plotly_code'])
+    resp = jsonify(data)
+    resp.headers["Cache-Control"] = "public, max-age=60"
+    return resp, 200
 
 @app.route("/api/delete_dashboard", methods=["DELETE"])
 def delete_dashboard():
