@@ -1,0 +1,67 @@
+[
+    {
+        "type": "system",
+        "data": {
+            "content": "You are an orchestrator that has access to specialized agents.\nAny query related to employees table: always use as per following flow logic.\n```mermaid\nflowchart TD\n    subgraph DataExtractor\n        DE1[\"simplify_query\"]\n        DE2[\"query_runner\"]\n        DE1 --> |query|DE2\n  \n    end\n    subgraph QuerySimilarityCache\n        QSC1[\"get_similar_tasks\"]\n        QSC2{\"Similar Tasks Found?\"}\n        QSC1 --> |\"similar task to sql map list\"|QSC2\n        QSC3[\"store_user_task\"]\n    end\n\n    subgraph DashboardCreator\n        DC1[\"generate_plotly_vizualizer_code\"] --> |plotly_code|DC2[\"put_plotly_code_in_metadata\"]\n    end\n\n    subgraph SimilarTaskAttributes\n        STA1([mongodb_object_id])\n        STA2([query])\n    end\n    A[\"user_task\"] --> |task| QSC1\n    A --> B[\"get_database_schema\"]\n    B --> |schema| DE1\n    QSC2 --> |yes|SimilarTaskAttributes\n    STA2 --> |query|DE2\n    QSC2 --> |no|DE1\n    A --> |task|QSC3\n    DE1 --> |query|QSC3\n    DE1 --> |query|DC1\n    QSC3 --> |mongodb_object_id|DC2\n\n    STA2 --> |query|DC1\n    A --> |task|DC1\n    STA1 --> |mongodb_object_id|DC2\n    %% style SimilarTaskAttributes fill:none,stroke:none,color:transparent\n    \n```\nFor any other query answer directly from your knowledge.",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "system",
+            "name": null,
+            "id": null
+        }
+    },
+    {
+        "type": "human",
+        "data": {
+            "content": "what kind of queries can you answer?",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "human",
+            "name": null,
+            "id": null
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I can answer general questions and help you explore the **employees database** using natural language—no SQL required.\n\nFor example:\n- **Employee lookups:** “Find employees named Alex.”\n- **Department summaries:** “How many employees work in each department?”\n- **Salary analysis:** “What’s the average salary by department?”\n- **Rankings:** “Who are the highest-paid employees?”\n- **Trends:** “How has hiring changed over time?”\n- **Charts and dashboards:** “Create a chart of employee counts by department.”\n\nThe exact database questions I can answer depend on which tables and fields are available.\n\nI can also help with explanations, writing, coding, planning, and other general topics. What would you like to know?",
+                    "annotations": [],
+                    "id": "msg_0fc6aee48e277910006af9853d59d48194905ef7e686a2b094",
+                    "phase": "final_answer"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_0fc6aee48e277910006af9853c37d88194b1daacb033878f26",
+                "created_at": 1794737468.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_0fc6aee48e277910006af9853c37d88194b1daacb033878f26",
+            "tool_calls": [],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 676,
+                "output_tokens": 152,
+                "total_tokens": 828,
+                "input_token_details": {
+                    "cache_creation": 0,
+                    "cache_read": 0
+                },
+                "output_token_details": {
+                    "reasoning": 0
+                }
+            }
+        }
+    }
+]

@@ -1,13 +1,16 @@
 {
   "_id": {
-    "$oid": "6af71da97d3c37189e2ce314"
+    "$oid": "6af98805c7846f7ddbd7756b"
   },
-  "text": "Median salaries per employee gender (current salary records with to_date = '9999-01-01')",
+  "text": "Number of employees per department changing over time",
   "metadata": {
-    "query": "WITH current_salaries AS (SELECT e.gender, s.salary FROM employees e JOIN salaries s ON s.emp_no = e.emp_no WHERE s.to_date = '9999-01-01'), ranked_salaries AS (SELECT gender, salary, ROW_NUMBER() OVER (PARTITION BY gender ORDER BY salary) AS rn, COUNT(*) OVER (PARTITION BY gender) AS cnt FROM current_salaries) SELECT gender, AVG(salary) AS median_salary FROM ranked_salaries WHERE rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2)) GROUP BY gender ORDER BY gender;",
+    "query": "WITH RECURSIVE bounds AS (SELECT YEAR(MIN(from_date)) AS first_year, GREATEST(MAX(from_date), COALESCE(MAX(CASE WHEN to_date < '9999-01-01' THEN to_date END), MAX(from_date))) AS last_date FROM dept_emp), years AS (SELECT first_year AS yr FROM bounds UNION ALL SELECT yr + 1 FROM years CROSS JOIN bounds WHERE yr < YEAR(last_date)), events AS (SELECT dept_no, YEAR(from_date) AS yr, 1 AS delta FROM dept_emp UNION ALL SELECT dept_no, YEAR(to_date) AS yr, -1 AS delta FROM dept_emp WHERE to_date < '9999-01-01'), annual AS (SELECT dept_no, yr, SUM(delta) AS delta FROM events GROUP BY dept_no, yr) SELECT LEAST(STR_TO_DATE(CONCAT(y.yr, '-12-31'), '%Y-%m-%d'), b.last_date) AS snapshot_date, d.dept_name, SUM(COALESCE(a.delta,0)) OVER (PARTITION BY d.dept_no ORDER BY y.yr) AS employee_count FROM years y CROSS JOIN departments d CROSS JOIN bounds b LEFT JOIN annual a ON a.dept_no = d.dept_no AND a.yr = y.yr ORDER BY snapshot_date, d.dept_name;",
     "database": "employees",
-    "plotly_code": "```json\n[{\n    \"x\": \"gender\",\n    \"y\": \"median_salary\",\n    \"text\": \"median_salary\",\n    \"type\": \"bar\"\n}]\n```",
-    "dashboard_description": "Median current salaries by employee gender, using salary records with to_date = '9999-01-01'.",
-    "update_timestamp": "2026-11-13 19:54:57"
+    "plotly_code": "[{\n    \"x\": \"snapshot_date\",\n    \"y\": \"employee_count\",\n    \"text\": \"dept_name\",\n    \"filter_condition\": \"(df['dept_name'].str[0].str.upper() == df['dept_name'].str[0])\",\n    \"type\": \"lines\",\n    \"name\": \"Employee Count\"\n}]",
+    "dashboard_description": "The dashboard provides insights into the annual employee count trends by department, highlighting changes over time and allowing for analysis of workforce dynamics within the organization.",
+    "update_timestamp": "2026-11-15 16:10:51"
+  },
+  "created_at": {
+    "$date": "2026-11-15T10:23:01.459Z"
   }
 }

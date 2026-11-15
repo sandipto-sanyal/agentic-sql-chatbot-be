@@ -1,0 +1,132 @@
+[
+    {
+        "type": "system",
+        "data": {
+            "content": "You are an orchestrator that has access to specialized agents.\nAny query related to employees table: always use as per following flow logic.\n```mermaid\nflowchart TD\n    subgraph DataExtractor\n        DE1[\"simplify_query\"]\n        DE2[\"query_runner\"]\n        DE1 --> |query|DE2\n  \n    end\n    subgraph QuerySimilarityCache\n        QSC1[\"get_similar_tasks\"]\n        QSC2{\"Similar Tasks Found?\"}\n        QSC1 --> |\"similar task to sql map list\"|QSC2\n        QSC3[\"store_user_task\"]\n    end\n\n    subgraph DashboardCreator\n        DC1[\"generate_plotly_vizualizer_code\"] --> |plotly_code|DC2[\"put_plotly_code_in_metadata\"]\n    end\n\n    subgraph SimilarTaskAttributes\n        STA1([mongodb_object_id])\n        STA2([query])\n    end\n    A[\"user_task\"] --> |task| QSC1\n    A --> B[\"get_database_schema\"]\n    B --> |schema| DE1\n    QSC2 --> |yes|SimilarTaskAttributes\n    STA2 --> |query|DE2\n    QSC2 --> |no|DE1\n    A --> |task|QSC3\n    DE1 --> |query|QSC3\n    DE1 --> |query|DC1\n    QSC3 --> |mongodb_object_id|DC2\n\n    STA2 --> |query|DC1\n    A --> |task|DC1\n    STA1 --> |mongodb_object_id|DC2\n    %% style SimilarTaskAttributes fill:none,stroke:none,color:transparent\n    \n```\nFor any other query answer directly from your knowledge.",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "system",
+            "name": null,
+            "id": null
+        }
+    },
+    {
+        "type": "human",
+        "data": {
+            "content": "what kind of queries that can be answered from the given schema?",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "human",
+            "name": null,
+            "id": null
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "arguments": "{}",
+                    "call_id": "call_5wpztCQ8mY9youTlUCJDPESE",
+                    "name": "get_database_schema",
+                    "type": "function_call",
+                    "id": "fc_0042db040c6857af006af9827431988196989d18677282c17b",
+                    "status": "completed"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_0042db040c6857af006af9827304008196bff4c4da98973c9b",
+                "created_at": 1794736755.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_0042db040c6857af006af9827304008196bff4c4da98973c9b",
+            "tool_calls": [
+                {
+                    "name": "get_database_schema",
+                    "args": {},
+                    "id": "call_5wpztCQ8mY9youTlUCJDPESE",
+                    "type": "tool_call"
+                }
+            ],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 681,
+                "output_tokens": 15,
+                "total_tokens": 696,
+                "input_token_details": {
+                    "cache_creation": 0,
+                    "cache_read": 0
+                },
+                "output_token_details": {
+                    "reasoning": 0
+                }
+            }
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": "CREATE TABLE `departments` (\n  `dept_no` char(4) NOT NULL,\n  `dept_name` varchar(40) NOT NULL,\n  PRIMARY KEY (`dept_no`),\n  UNIQUE KEY `dept_name` (`dept_name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `dept_emp` (\n  `emp_no` int NOT NULL,\n  `dept_no` char(4) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`dept_no`),\n  KEY `dept_no` (`dept_no`),\n  CONSTRAINT `dept_emp_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE,\n  CONSTRAINT `dept_emp_ibfk_2` FOREIGN KEY (`dept_no`) REFERENCES `departments` (`dept_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `dept_manager` (\n  `emp_no` int NOT NULL,\n  `dept_no` char(4) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`dept_no`),\n  KEY `dept_no` (`dept_no`),\n  CONSTRAINT `dept_manager_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE,\n  CONSTRAINT `dept_manager_ibfk_2` FOREIGN KEY (`dept_no`) REFERENCES `departments` (`dept_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `employees` (\n  `emp_no` int NOT NULL,\n  `birth_date` date NOT NULL,\n  `first_name` varchar(14) NOT NULL,\n  `last_name` varchar(16) NOT NULL,\n  `gender` enum('M','F') NOT NULL,\n  `hire_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `salaries` (\n  `emp_no` int NOT NULL,\n  `salary` int NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`from_date`),\n  CONSTRAINT `salaries_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `titles` (\n  `emp_no` int NOT NULL,\n  `title` varchar(50) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date DEFAULT NULL,\n  PRIMARY KEY (`emp_no`,`title`,`from_date`),\n  CONSTRAINT `titles_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_5wpztCQ8mY9youTlUCJDPESE",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "type": "text",
+                    "text": "The schema supports **employee, department, salary, job-title, and management analysis**, including historical changes.\n\n| Category | Example questions you can ask |\n|---|---|\n| **Employee details** | Find an employee by name or employee number. Who was hired within a particular date range? |\n| **Workforce demographics** | What is the gender distribution? What is the age distribution by department? |\n| **Departments and headcount** | How many employees are assigned to each department? Which department has the most employees? |\n| **Salary analysis** | What are the average, minimum, and maximum salaries by department or title? Who are the highest-paid employees? |\n| **Salary history** | How has an employee’s salary changed? Who had the largest recorded salary increase? |\n| **Job titles and career changes** | How many employees hold each title? Which employees changed titles, and when? |\n| **Department transfers** | Which employees have worked in multiple departments? What is an employee’s department history? |\n| **Management history** | Who manages each department? Who were its previous managers, and how long did they serve? |\n| **Hiring and tenure** | How many employees were hired each year? Who has the longest tenure since hiring? |\n| **Historical snapshots** | What were department headcounts, managers, titles, or salaries on a specified date? |\n| **Combined comparisons** | How do salaries differ by department, title, gender, or hiring cohort? Do managers earn more than other employees? |\n| **Data-quality checks** | Are there overlapping salary or title periods, invalid date ranges, or gaps in assignment histories? |\n\n**Important limitations**\n- “Current” records must be identified using the date ranges and the database’s end-date conventions.\n- The schema does **not** include performance ratings, attendance, bonuses, locations, contact details, or explicit termination reasons.\n- Title changes can be identified, but they are not necessarily promotions. Employment departures can only be inferred cautiously because there is no explicit termination date.\n\nYou can ask these questions in plain English—for example: **“Show the top 10 highest-paid employees in each department as of January 1, 2000.”**",
+                    "annotations": [],
+                    "id": "msg_0042db040c6857af006af9827600b88196aac89bbed2cb5c57",
+                    "phase": "final_answer"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_0042db040c6857af006af982750ba88196b4c965eaf8171d5f",
+                "created_at": 1794736757.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_0042db040c6857af006af982750ba88196b4c965eaf8171d5f",
+            "tool_calls": [],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 1413,
+                "output_tokens": 453,
+                "total_tokens": 1866,
+                "input_token_details": {
+                    "cache_creation": 1410,
+                    "cache_read": 0
+                },
+                "output_token_details": {
+                    "reasoning": 0
+                }
+            }
+        }
+    }
+]

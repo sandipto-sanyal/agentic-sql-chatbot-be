@@ -1,0 +1,404 @@
+[
+    {
+        "type": "system",
+        "data": {
+            "content": "You are an orchestrator that has access to specialized agents.\nAny query related to employees table: always use as per following flow logic.\n```mermaid\nflowchart TD\n    subgraph DataExtractor\n        DE1[\"simplify_query\"]\n        DE2[\"query_runner\"]\n        DE1 --> |query|DE2\n  \n    end\n    subgraph QuerySimilarityCache\n        QSC1[\"get_similar_tasks\"]\n        QSC2{\"Similar Tasks Found?\"}\n        QSC1 --> |\"similar task to sql map list\"|QSC2\n        QSC3[\"store_user_task\"]\n    end\n\n    subgraph DashboardCreator\n        DC1[\"generate_plotly_vizualizer_code\"] --> |plotly_code|DC2[\"put_plotly_code_in_metadata\"]\n    end\n\n    subgraph SimilarTaskAttributes\n        STA1([mongodb_object_id])\n        STA2([query])\n    end\n    A[\"user_task\"] --> |task| QSC1\n    A --> B[\"get_database_schema\"]\n    B --> |schema| DE1\n    QSC2 --> |yes|SimilarTaskAttributes\n    STA2 --> |query|DE2\n    QSC2 --> |no|DE1\n    A --> |task|QSC3\n    DE1 --> |query|QSC3\n    DE1 --> |query|DC1\n    QSC3 --> |mongodb_object_id|DC2\n\n    STA2 --> |query|DC1\n    A --> |task|DC1\n    STA1 --> |mongodb_object_id|DC2\n    %% style SimilarTaskAttributes fill:none,stroke:none,color:transparent\n    \n```\nFor any other query answer directly from your knowledge.",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "system",
+            "name": null,
+            "id": null
+        }
+    },
+    {
+        "type": "human",
+        "data": {
+            "content": "Department wise median Salaries for every gender",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "human",
+            "name": null,
+            "id": null
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "arguments": "{\"task\":\"Department wise median Salaries for every gender\"}",
+                    "call_id": "call_fCVdG95WFck2N6KZTXkiePMO",
+                    "name": "get_similar_tasks",
+                    "type": "function_call",
+                    "id": "fc_05addab499394038006af97377b45c8195bd9ecd6e107eed05",
+                    "status": "completed"
+                },
+                {
+                    "arguments": "{}",
+                    "call_id": "call_Kkrye8093ULwTeBBGfEPHvRh",
+                    "name": "get_database_schema",
+                    "type": "function_call",
+                    "id": "fc_05addab499394038006af97377b470819583e93d98605514fd",
+                    "status": "completed"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_05addab499394038006af97375b564819588bec813bdffa03b",
+                "created_at": 1794732917.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_05addab499394038006af97375b564819588bec813bdffa03b",
+            "tool_calls": [
+                {
+                    "name": "get_similar_tasks",
+                    "args": {
+                        "task": "Department wise median Salaries for every gender"
+                    },
+                    "id": "call_fCVdG95WFck2N6KZTXkiePMO",
+                    "type": "tool_call"
+                },
+                {
+                    "name": "get_database_schema",
+                    "args": {},
+                    "id": "call_Kkrye8093ULwTeBBGfEPHvRh",
+                    "type": "tool_call"
+                }
+            ],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 676,
+                "output_tokens": 56,
+                "total_tokens": 732,
+                "input_token_details": {
+                    "cache_creation": 0,
+                    "cache_read": 0
+                },
+                "output_token_details": {
+                    "reasoning": 0
+                }
+            }
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": [],
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_fCVdG95WFck2N6KZTXkiePMO",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": "CREATE TABLE `departments` (\n  `dept_no` char(4) NOT NULL,\n  `dept_name` varchar(40) NOT NULL,\n  PRIMARY KEY (`dept_no`),\n  UNIQUE KEY `dept_name` (`dept_name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `dept_emp` (\n  `emp_no` int NOT NULL,\n  `dept_no` char(4) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`dept_no`),\n  KEY `dept_no` (`dept_no`),\n  CONSTRAINT `dept_emp_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE,\n  CONSTRAINT `dept_emp_ibfk_2` FOREIGN KEY (`dept_no`) REFERENCES `departments` (`dept_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `dept_manager` (\n  `emp_no` int NOT NULL,\n  `dept_no` char(4) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`dept_no`),\n  KEY `dept_no` (`dept_no`),\n  CONSTRAINT `dept_manager_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE,\n  CONSTRAINT `dept_manager_ibfk_2` FOREIGN KEY (`dept_no`) REFERENCES `departments` (`dept_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `employees` (\n  `emp_no` int NOT NULL,\n  `birth_date` date NOT NULL,\n  `first_name` varchar(14) NOT NULL,\n  `last_name` varchar(16) NOT NULL,\n  `gender` enum('M','F') NOT NULL,\n  `hire_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `salaries` (\n  `emp_no` int NOT NULL,\n  `salary` int NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date NOT NULL,\n  PRIMARY KEY (`emp_no`,`from_date`),\n  CONSTRAINT `salaries_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n\nCREATE TABLE `titles` (\n  `emp_no` int NOT NULL,\n  `title` varchar(50) NOT NULL,\n  `from_date` date NOT NULL,\n  `to_date` date DEFAULT NULL,\n  PRIMARY KEY (`emp_no`,`title`,`from_date`),\n  CONSTRAINT `titles_ibfk_1` FOREIGN KEY (`emp_no`) REFERENCES `employees` (`emp_no`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_Kkrye8093ULwTeBBGfEPHvRh",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "id": "rs_05addab499394038006af9737fea7c81959542a99f6002466d",
+                    "summary": [],
+                    "type": "reasoning",
+                    "content": [],
+                    "encrypted_content": "gAAAAABq-XOAdxMXuQV7gdNvujk5qNdr_07st17956_ctbDqhAXkFGVFFxVMoSByvA6M33rGjnn25kkkkwuQr2CxEqPVy8-epcA1Xdg4Eo7F27qR6Qqbx4VzikfeKexyq1DEXAf8gBImNcc3ySPgocKKCnG-2X8deR4DjfvxAVdWgHosJK6AYIrgf7DAN9osoLyCWcrRPmXiDf_id7yKdrAa8_LiK_uj3r265BHkKA5gF0VvEKaOPy0uPqAk_fDKZHizCb7Gj-qCquuWhyotZpRB-vcEWlIdZbSk8PMiIZPmNVkeoNw77TdxLVcdx5zNbZeOD53Ek-bkZosjf8N2GMqhxFoFhOtAi9OgqbP69Dp9Wyi6mWdPsOhhz3e_QlCj4XLd3vDBHTmN3vGi04kI3GwalCoTRJ3-a9qCZ1HkqZbPDqhYhxq7iTT8seAvCd-SPxdCRu91B_JguzXbYDHeVExJJamSCaAh78XbNaoa8uWKPxpmABaq2-aBtcodAoVgjnJSGb09i3YPkliWJTvKwnAKM-cRdF5Dvy1whZHr9OLFW5v_nFlgpnRWnTCnw7lKZ9LmPEJWGTHw-XaZlCUP_os-VI6hoTSyYuLpH0ALmjgHdrD1Uk5TiD73p3AsLir0MeKt8zHJ_Yc9nQy9znisq1EFactmO-1ScCYVnwtf9UbPktaGemhE40bumT4HmQm6Tu7blqc-vgj-EgarxKJdZcyXe5CT4-ZAf86qXqUYCi2Q-6ExscLh_GTDcwQpfKXJBMSrAfj2gevXjEuv0eFzZPQ2rf_BMB3Uwg7AKdTKjXVlgm1D7X9vTQUbmI_3YLM7siq7a3blJCG5XBzMxw9q4cVH6uONxeo0e3uepxkpTZWUDbEagIFscYz-6siUeXl5UHClv86OUxKYDE9jk4jLQvCJ1hSDQxM_jTfxEPu3pKxIkwAKcLE7z7zHwi-y8PoU1aJOS71yj4I6aQEpoJENtKM8LwkOQ55a8z6eplIBvscAFh6MOQ_mSrIr5pgj8HDcmIgw9CQugiQhh_8UY2ocT1dswN5xI7bUtnuuVXIjfEovdh_kdC6AHeR5_T730gXWOmzg6_DVz6fVfB5nutZJHjAgNZMrHLZS-48xuoa1PvEK_gsUAs5L5pJ4a1PtWsDlG89Wdn2_zjXj9gb9jFywTQvqerdh-F48SYefa46fPjQpdyiwSSy10esYwInaYYN99MwRi8F4vVMK6V_ia-DgX4rS6RieJjXFzpSUq045XPk0wLeb7iNmy1iDXRJ7yIRQqU9D-N3o_2nis4S_N87wQHXuL55ai3PLkKO8jUeh3K45rbd6ClCcoO-0H4CM9wf9q9fjNVTv0B-vCcn9YqCqQyxxL3O8nKa5GYm9BDpmWG3dsZElztJI946rXTp5oL2AdRqTOL6ArMu66YGjLWiEPIi2fECUALGVOXtzNmolq6D7v4J64m08TK54cukxnloYu6ph9-5Oyo9i"
+                },
+                {
+                    "arguments": "{\"task\":\"Department wise median Salaries for every gender\"}",
+                    "call_id": "call_0DIN0JVWMekF5G1M6B3o6ziP",
+                    "name": "get_similar_tasks",
+                    "type": "function_call",
+                    "id": "fc_05addab499394038006af973803f488195bf30305d85f74a03",
+                    "status": "completed"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_05addab499394038006af9737e8a6881958a39b1c14c543a85",
+                "created_at": 1794732926.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_05addab499394038006af9737e8a6881958a39b1c14c543a85",
+            "tool_calls": [
+                {
+                    "name": "get_similar_tasks",
+                    "args": {
+                        "task": "Department wise median Salaries for every gender"
+                    },
+                    "id": "call_0DIN0JVWMekF5G1M6B3o6ziP",
+                    "type": "tool_call"
+                }
+            ],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 1449,
+                "output_tokens": 37,
+                "total_tokens": 1486,
+                "input_token_details": {
+                    "cache_creation": 1446,
+                    "cache_read": 0
+                },
+                "output_token_details": {
+                    "reasoning": 8
+                }
+            }
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": [],
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_0DIN0JVWMekF5G1M6B3o6ziP",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "id": "rs_05addab499394038006af97382c2b8819583de9f601c91ff3e",
+                    "summary": [],
+                    "type": "reasoning",
+                    "content": [],
+                    "encrypted_content": "gAAAAABq-XOIjTtNftW0wXKI9hhrQIA0a7H1bknmAcA4ysDfpnhDLIBI2SiUuXssdtbbRtMT-Gfn_OQPheEudAIhFqvyUTWuKGDulYJ6pXW39qOgGXOvMto_PPsQ6UFtdYZecjps8HPg2rtVmFI1AiqR0ieIKIrep0PJf2MYC_pM0QDp8MhCn6eNS0AqrWMW8m3rOpDHMoWXv4R2FdlkwdjXBFgbk6r_mLmUMoH5INFvoCAwU7_lgOpTonhLIjv0c5_01WTBxU41TfYn6tub_R3588IynoOsnHqib_uGb35psj61JHsIVJQsX5vgwmUT03lpxsBnqpH7RnhURcijAGnz8dacn-gf1aPj31jS0r9tdfB6K4eI5CQJ_jBnHn3jknjlQCBmFo6SMyGJ5MmIUBZusrnf7SCEezKlvbNIw54Jsk20aj5xxL6RGZ_EIP35Rv-7lIta1qPwOJTiq2MlOvxl4dBZFcB3zWl57DlD7rNzzW7mtDHB5CF8efCHCvwiIhNS4egs9MLp_CwaIPkNXDvfi_s0kGaMXj5rhj8RrXQxO6plR5rwxcIBRnxTvHtvjmwwBXt_hDOfSZ_Opc_3Niidq4IR-AejTBGsyhrvN355OdtvwtsiR5gbTR7M6qVo2t31ZdMAyPFtYZJgNz2I8RY1cQVN6XCoCO95ZUMGzheDREPCNs63X142ZcY0zQrQEnubWDyPKyfONOYSP3bwpSqHe34NeNneo9wNVWSMmafJsBnOxR4KHosJhCEo2AbngkiQgFRZ45Uj0EKKKqOm1fuoSNnLiM3NMHpC8-FOCc_2-tjBZFo8UToh-8a_kktEHCDeISpTJuSrybq_VF92gEFFNgxB-sqZSLP2kgOPsfI_88NDx43XB0kXZ9G5WNcS_KJMsBOwAWEhs4pVYCBmhVNSryjtCbcKzisXHUNU0k3BCBkeFrhuWPMIP-Rr7hyckIqvMrzlurE7nspFpohzHUPE9asDdTO5Ltz5XtIweGKAwv-Pdx2c2_GBhlx-ZGXBvTtakUr8XvI5lKCWze9p3wZKKdSoEsuyuTv6Lwsxd3yDX2Vy1BK6a_WRjQivoKEHyCsNjauyHlsGKScmvkmiM-Nbn5LparM0VDb80aaK-hAQt3FJg1m9M2lp6eHTJnXnOGpSA-0_gD4e7YWqFYsJP43RZJsHMd6fC31cUVGrUY34zomp15Ma5YNLAzJi2U5836VUjhPAf2V97MYLzh9J-HyRuOia5v-TkNKMWiluWx9BFbt9JsB_K4dKDZy7uzl3WMypUxff97vQfdK2HcRw5kX-XkiWx280w1F43Tzc74Ix_TXsLO0PoMH9zR1oHcRhZEM_g9hCSLbAzaOwHLsIBJlhTGKDsIXKN9_dYTjD13rj421fO9_MMZSHErck4KDDgmyPmgEJmR3NiiFLV_A3kpL2DH_Le1qsX-DRtJ04NFuiFHJdg3AzYEZUDu_h1PCcpfZyV602NdTxUrAfS5QA0r2fIoN-oG8jootkuuXmb2M4Ofc-QkuokSiWAA34m6nKezrQ6PVpUvbp"
+                },
+                {
+                    "type": "text",
+                    "text": "I’ll calculate median salaries by department and gender using current salary records and current department assignments.",
+                    "annotations": [],
+                    "id": "msg_05addab499394038006af9738330ec81958572cad66cdaec09",
+                    "phase": "commentary"
+                },
+                {
+                    "arguments": "{\"query\":\"WITH ranked_salaries AS (SELECT d.dept_name, e.gender, s.salary, ROW_NUMBER() OVER (PARTITION BY d.dept_no, e.gender ORDER BY s.salary, e.emp_no) AS rn, COUNT(*) OVER (PARTITION BY d.dept_no, e.gender) AS cnt FROM employees e JOIN dept_emp de ON de.emp_no = e.emp_no AND de.to_date = '9999-01-01' JOIN departments d ON d.dept_no = de.dept_no JOIN salaries s ON s.emp_no = e.emp_no AND s.to_date = '9999-01-01') SELECT dept_name, gender, AVG(salary) AS median_salary FROM ranked_salaries WHERE rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2)) GROUP BY dept_name, gender ORDER BY dept_name, gender;\",\"schema\":\"CREATE TABLE departments (dept_no char(4) PRIMARY KEY, dept_name varchar(40)); CREATE TABLE dept_emp (emp_no int, dept_no char(4), from_date date, to_date date, PRIMARY KEY(emp_no,dept_no)); CREATE TABLE employees (emp_no int PRIMARY KEY, birth_date date, first_name varchar(14), last_name varchar(16), gender enum('M','F'), hire_date date); CREATE TABLE salaries (emp_no int, salary int, from_date date, to_date date, PRIMARY KEY(emp_no,from_date)); CREATE TABLE dept_manager (emp_no int, dept_no char(4), from_date date, to_date date, PRIMARY KEY(emp_no,dept_no)); CREATE TABLE titles (emp_no int, title varchar(50), from_date date, to_date date, PRIMARY KEY(emp_no,title,from_date));\"}",
+                    "call_id": "call_ianrlqNNx93eMoLKrkfna2Mp",
+                    "name": "simplify_query",
+                    "type": "function_call",
+                    "id": "fc_05addab499394038006af97383e738819599f37881136ed945",
+                    "status": "completed"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_05addab499394038006af973817ec48195bd8a97ab45f33132",
+                "created_at": 1794732929.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_05addab499394038006af973817ec48195bd8a97ab45f33132",
+            "tool_calls": [
+                {
+                    "name": "simplify_query",
+                    "args": {
+                        "query": "WITH ranked_salaries AS (SELECT d.dept_name, e.gender, s.salary, ROW_NUMBER() OVER (PARTITION BY d.dept_no, e.gender ORDER BY s.salary, e.emp_no) AS rn, COUNT(*) OVER (PARTITION BY d.dept_no, e.gender) AS cnt FROM employees e JOIN dept_emp de ON de.emp_no = e.emp_no AND de.to_date = '9999-01-01' JOIN departments d ON d.dept_no = de.dept_no JOIN salaries s ON s.emp_no = e.emp_no AND s.to_date = '9999-01-01') SELECT dept_name, gender, AVG(salary) AS median_salary FROM ranked_salaries WHERE rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2)) GROUP BY dept_name, gender ORDER BY dept_name, gender;",
+                        "schema": "CREATE TABLE departments (dept_no char(4) PRIMARY KEY, dept_name varchar(40)); CREATE TABLE dept_emp (emp_no int, dept_no char(4), from_date date, to_date date, PRIMARY KEY(emp_no,dept_no)); CREATE TABLE employees (emp_no int PRIMARY KEY, birth_date date, first_name varchar(14), last_name varchar(16), gender enum('M','F'), hire_date date); CREATE TABLE salaries (emp_no int, salary int, from_date date, to_date date, PRIMARY KEY(emp_no,from_date)); CREATE TABLE dept_manager (emp_no int, dept_no char(4), from_date date, to_date date, PRIMARY KEY(emp_no,dept_no)); CREATE TABLE titles (emp_no int, title varchar(50), from_date date, to_date date, PRIMARY KEY(emp_no,title,from_date));"
+                    },
+                    "id": "call_ianrlqNNx93eMoLKrkfna2Mp",
+                    "type": "tool_call"
+                }
+            ],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 1488,
+                "output_tokens": 425,
+                "total_tokens": 1913,
+                "input_token_details": {
+                    "cache_creation": 0,
+                    "cache_read": 1446
+                },
+                "output_token_details": {
+                    "reasoning": 14
+                }
+            }
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": "```sql\nWITH ranked_salaries AS (\n    SELECT \n        d.dept_name, \n        e.gender, \n        s.salary, \n        ROW_NUMBER() OVER (PARTITION BY d.dept_no, e.gender ORDER BY s.salary, e.emp_no) AS rn, \n        COUNT(*) OVER (PARTITION BY d.dept_no, e.gender) AS cnt \n    FROM \n        employees e \n        JOIN dept_emp de ON de.emp_no = e.emp_no AND de.to_date = '9999-01-01' \n        JOIN departments d ON d.dept_no = de.dept_no \n        JOIN salaries s ON s.emp_no = e.emp_no AND s.to_date = '9999-01-01'\n),\nmedian_salaries AS (\n    SELECT \n        dept_name, \n        gender, \n        salary \n    FROM \n        ranked_salaries \n    WHERE \n        rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2))\n)\nSELECT \n    dept_name, \n    gender, \n    AVG(salary) AS median_salary \nFROM \n    median_salaries \nGROUP BY \n    dept_name, \n    gender \nORDER BY \n    dept_name, \n    gender;\n```",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_ianrlqNNx93eMoLKrkfna2Mp",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "arguments": "{\"query\":\"WITH ranked_salaries AS (SELECT d.dept_name, e.gender, s.salary, ROW_NUMBER() OVER (PARTITION BY d.dept_no, e.gender ORDER BY s.salary, e.emp_no) AS rn, COUNT(*) OVER (PARTITION BY d.dept_no, e.gender) AS cnt FROM employees e JOIN dept_emp de ON de.emp_no = e.emp_no AND de.to_date = '9999-01-01' JOIN departments d ON d.dept_no = de.dept_no JOIN salaries s ON s.emp_no = e.emp_no AND s.to_date = '9999-01-01'), median_salaries AS (SELECT dept_name, gender, salary FROM ranked_salaries WHERE rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2))) SELECT dept_name, gender, AVG(salary) AS median_salary FROM median_salaries GROUP BY dept_name, gender ORDER BY dept_name, gender;\"}",
+                    "call_id": "call_cRmojIvkwz5Z9LTAwyQwwLAs",
+                    "name": "query_runner",
+                    "type": "function_call",
+                    "id": "fc_05addab499394038006af97398742881959b22e00b06af6e7a",
+                    "status": "completed"
+                },
+                {
+                    "arguments": "{\"task\":\"Department wise median Salaries for every gender\",\"query\":\"WITH ranked_salaries AS (SELECT d.dept_name, e.gender, s.salary, ROW_NUMBER() OVER (PARTITION BY d.dept_no, e.gender ORDER BY s.salary, e.emp_no) AS rn, COUNT(*) OVER (PARTITION BY d.dept_no, e.gender) AS cnt FROM employees e JOIN dept_emp de ON de.emp_no = e.emp_no AND de.to_date = '9999-01-01' JOIN departments d ON d.dept_no = de.dept_no JOIN salaries s ON s.emp_no = e.emp_no AND s.to_date = '9999-01-01'), median_salaries AS (SELECT dept_name, gender, salary FROM ranked_salaries WHERE rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2))) SELECT dept_name, gender, AVG(salary) AS median_salary FROM median_salaries GROUP BY dept_name, gender ORDER BY dept_name, gender;\"}",
+                    "call_id": "call_hgO0CHQMbBvbjD7YHVSMlgF6",
+                    "name": "store_user_task",
+                    "type": "function_call",
+                    "id": "fc_05addab499394038006af9739874388195bc755f3945c8dc9b",
+                    "status": "completed"
+                },
+                {
+                    "arguments": "{\"query\":\"WITH ranked_salaries AS (SELECT d.dept_name, e.gender, s.salary, ROW_NUMBER() OVER (PARTITION BY d.dept_no, e.gender ORDER BY s.salary, e.emp_no) AS rn, COUNT(*) OVER (PARTITION BY d.dept_no, e.gender) AS cnt FROM employees e JOIN dept_emp de ON de.emp_no = e.emp_no AND de.to_date = '9999-01-01' JOIN departments d ON d.dept_no = de.dept_no JOIN salaries s ON s.emp_no = e.emp_no AND s.to_date = '9999-01-01'), median_salaries AS (SELECT dept_name, gender, salary FROM ranked_salaries WHERE rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2))) SELECT dept_name, gender, AVG(salary) AS median_salary FROM median_salaries GROUP BY dept_name, gender ORDER BY dept_name, gender;\",\"task\":\"Grouped bar chart of department-wise median salaries for every gender, using current salaries and current department assignments.\"}",
+                    "call_id": "call_3wOUezwY1M8l2ITA4oiP0FcX",
+                    "name": "generate_plotly_vizualizer_code",
+                    "type": "function_call",
+                    "id": "fc_05addab499394038006af97398744081959bf519c69e409334",
+                    "status": "completed"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_05addab499394038006af9738edb9081959bc92eeace893efb",
+                "created_at": 1794732942.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_05addab499394038006af9738edb9081959bc92eeace893efb",
+            "tool_calls": [
+                {
+                    "name": "query_runner",
+                    "args": {
+                        "query": "WITH ranked_salaries AS (SELECT d.dept_name, e.gender, s.salary, ROW_NUMBER() OVER (PARTITION BY d.dept_no, e.gender ORDER BY s.salary, e.emp_no) AS rn, COUNT(*) OVER (PARTITION BY d.dept_no, e.gender) AS cnt FROM employees e JOIN dept_emp de ON de.emp_no = e.emp_no AND de.to_date = '9999-01-01' JOIN departments d ON d.dept_no = de.dept_no JOIN salaries s ON s.emp_no = e.emp_no AND s.to_date = '9999-01-01'), median_salaries AS (SELECT dept_name, gender, salary FROM ranked_salaries WHERE rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2))) SELECT dept_name, gender, AVG(salary) AS median_salary FROM median_salaries GROUP BY dept_name, gender ORDER BY dept_name, gender;"
+                    },
+                    "id": "call_cRmojIvkwz5Z9LTAwyQwwLAs",
+                    "type": "tool_call"
+                },
+                {
+                    "name": "store_user_task",
+                    "args": {
+                        "task": "Department wise median Salaries for every gender",
+                        "query": "WITH ranked_salaries AS (SELECT d.dept_name, e.gender, s.salary, ROW_NUMBER() OVER (PARTITION BY d.dept_no, e.gender ORDER BY s.salary, e.emp_no) AS rn, COUNT(*) OVER (PARTITION BY d.dept_no, e.gender) AS cnt FROM employees e JOIN dept_emp de ON de.emp_no = e.emp_no AND de.to_date = '9999-01-01' JOIN departments d ON d.dept_no = de.dept_no JOIN salaries s ON s.emp_no = e.emp_no AND s.to_date = '9999-01-01'), median_salaries AS (SELECT dept_name, gender, salary FROM ranked_salaries WHERE rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2))) SELECT dept_name, gender, AVG(salary) AS median_salary FROM median_salaries GROUP BY dept_name, gender ORDER BY dept_name, gender;"
+                    },
+                    "id": "call_hgO0CHQMbBvbjD7YHVSMlgF6",
+                    "type": "tool_call"
+                },
+                {
+                    "name": "generate_plotly_vizualizer_code",
+                    "args": {
+                        "query": "WITH ranked_salaries AS (SELECT d.dept_name, e.gender, s.salary, ROW_NUMBER() OVER (PARTITION BY d.dept_no, e.gender ORDER BY s.salary, e.emp_no) AS rn, COUNT(*) OVER (PARTITION BY d.dept_no, e.gender) AS cnt FROM employees e JOIN dept_emp de ON de.emp_no = e.emp_no AND de.to_date = '9999-01-01' JOIN departments d ON d.dept_no = de.dept_no JOIN salaries s ON s.emp_no = e.emp_no AND s.to_date = '9999-01-01'), median_salaries AS (SELECT dept_name, gender, salary FROM ranked_salaries WHERE rn IN (FLOOR((cnt + 1) / 2), FLOOR((cnt + 2) / 2))) SELECT dept_name, gender, AVG(salary) AS median_salary FROM median_salaries GROUP BY dept_name, gender ORDER BY dept_name, gender;",
+                        "task": "Grouped bar chart of department-wise median salaries for every gender, using current salaries and current department assignments."
+                    },
+                    "id": "call_3wOUezwY1M8l2ITA4oiP0FcX",
+                    "type": "tool_call"
+                }
+            ],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 2192,
+                "output_tokens": 715,
+                "total_tokens": 2907,
+                "input_token_details": {
+                    "cache_creation": 743,
+                    "cache_read": 1446
+                },
+                "output_token_details": {
+                    "reasoning": 0
+                }
+            }
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": "Request Completed. Result masked and not presented to LLM for privacy reasons",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_cRmojIvkwz5Z9LTAwyQwwLAs",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": "{'mongodb_object_id': '6af973a3c7846f7ddbd77566'}",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_hgO0CHQMbBvbjD7YHVSMlgF6",
+            "artifact": null,
+            "status": "success"
+        }
+    },
+    {
+        "type": "tool",
+        "data": {
+            "content": "{'plotly_code': '[{\\n    \"x\": \"dept_name\",\\n    \"y\": \"median_salary\",\\n    \"text\": \"gender\",\\n    \"filter_condition\": \"(df[\\'gender\\'].str.upper() == \\'M\\') | (df[\\'gender\\'].str.upper() == \\'F\\')\",\\n    \"type\": \"bar\",\\n    \"name\": \"Median Salary\"\\n}]', 'dashboard_description': 'The dashboard provides insights into the median salaries by department and gender, enabling the business to analyze pay equity and salary distribution across different demographics.'}",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "tool",
+            "name": null,
+            "id": null,
+            "tool_call_id": "call_3wOUezwY1M8l2ITA4oiP0FcX",
+            "artifact": null,
+            "status": "success"
+        }
+    }
+]

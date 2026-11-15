@@ -72,7 +72,7 @@ def get_database_schema(db: Annotated[MySQLConnector, InjectedToolArg],
     '''Gets the database schema (CREATE TABLE DDL for every table) for the employees db.
     ** This agent has to be mandatorily run first before query_runner
     '''
-    print("\t[get_database_schema] invoked")
+    # print("\t[get_database_schema] invoked")
     # 1. List all tables in the database
     tables = db.execute_query("SHOW TABLES;")
     # SHOW TABLES returns rows like {"Tables_in_employees": "departments"}
@@ -94,7 +94,7 @@ def query_runner(query: str,
                  db: Annotated[MySQLConnector, InjectedToolArg],
                  ws: Annotated[Server | None, InjectedToolArg] = None):
     '''Runs a query in the employees database'''
-    print("\t[query_runner] invoked")
+    # print("\t[query_runner] invoked")
     # save the query in file
     with open("employee_agentic_chatbot.sql", "a") as f:
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -181,10 +181,11 @@ def generate_plotly_vizualizer_code(query:str,
                                     ) -> Dict[str, str]:
     """Generates a Plotly based code for a given query."""
     llm = _subagent_llm(temperature=0)
-    plotly_code_prompt = open_prompt_file("user_prompts/generate_plotly_vizualizer_code.md",query=query, task=task)
+    plotly_code_system_prompt = open_prompt_file("system_prompts/generate_plotly_vizualizer_code.md")
+    plotly_code_user_prompt = open_prompt_file("user_prompts/generate_plotly_vizualizer_code.md",query=query, task=task)
     messages = [
-        SystemMessage(open_prompt_file("system_prompts/generate_plotly_vizualizer_code.md")),
-        HumanMessage(plotly_code_prompt)
+        SystemMessage(plotly_code_system_prompt),
+        HumanMessage(plotly_code_user_prompt)
     ]
     plotly_code = llm.invoke(messages)
     
@@ -326,6 +327,7 @@ def orchestrator(user_task: str,
             # Execute each requested sub-agent and feed results back.
             for call in ai_message.tool_calls:
                 agent = TOOLS_BY_NAME.get(call["name"])
+                print(f"\t[{call['name']}] invoked.\n\tArgs: {call['args']}")
                 send_ws_message({"type_": "ProgressMessage",
                                  "toolName": call["name"],
                                  "step": step,

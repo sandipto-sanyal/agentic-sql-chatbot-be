@@ -19,6 +19,23 @@
             "program": "${workspaceFolder}/app.py",
             "console": "integratedTerminal",
             "python": "C:\\Users\\sandi\\python_venvs\\python313\\Scripts\\python.exe",            
+        },
+
+        {
+            "name": "Python Debugger: test_tools.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/test_tools.py",
+            "console": "integratedTerminal",
+            "python": "C:\\Users\\sandi\\python_venvs\\python313\\Scripts\\python.exe",            
+        },
+        {
+            "name": "Python Debugger: dashboard.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/dashboard.py",
+            "console": "integratedTerminal",
+            "python": "C:\\Users\\sandi\\python_venvs\\python313\\Scripts\\python.exe",            
         }
     ]
 }

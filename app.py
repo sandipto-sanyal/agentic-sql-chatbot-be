@@ -8,7 +8,8 @@ from chat_logger import get_logger
 import traceback
 import os
 from flask_cors import CORS
-from dashboard import get_dashboards, get_data, delete_dashboard as delete_dashboard_record
+from dashboard import get_dashboards, get_data, delete_dashboard as delete_dashboard_record,\
+    regenerate_dashboard
 
 app = Flask(__name__)
 sock = Sock(app)
@@ -49,7 +50,8 @@ def get_dashobards():
 def get_data_route():
     database = request.json['database']
     query = request.json['query']
-    data = get_data(database=database, query=query)
+    plotly_code = request.json['plotly_code']
+    data = get_data(database=database, query=query, trace_directives=plotly_code)
     return jsonify(data), 200
 
 @app.route("/api/delete_dashboard", methods=["DELETE"])
@@ -61,6 +63,14 @@ def delete_dashboard():
         return jsonify({"error": "dashboard not found"}), 404
     return jsonify({"deleted": deleted}), 200
 
+@app.route("/api/try_dashboard_regeneration", methods=["POST"])
+def dashboard_regeneration():
+    output = regenerate_dashboard(
+        mongodb_object_id=request.json['mongodb_object_id'],
+        query = request.json['query'],
+        task = request.json['task']
+    )
+    return jsonify(output), 200
 
 @sock.route("/ws")
 def websocket(ws:simple_websocket.ws.Server):
