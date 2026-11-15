@@ -75,19 +75,28 @@ def parse_trace_directives(trace_directives:str) -> List[TraceDirectiveType]:
     cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", trace_directives.strip())
     return json.loads(cleaned)
 
-def give_traces_per_category(df:pd.DataFrame, 
+def json_safe_records(df:pd.DataFrame) -> List[Dict[str, Any]]:
+    """Rows as plain JSON types. to_json handles numpy ints/floats, NaN and Decimal,
+    which to_dict and tolist leave as objects that Flask cannot serialize."""
+    return json.loads(df.to_json(orient='records'))
+
+def json_safe_column(series:pd.Series) -> List[Any]:
+    return json.loads(series.to_json(orient='records'))
+
+def give_traces_per_category(df:pd.DataFrame,
                              color_by:str,
                              trace_directive:TraceDirectiveType
                              ) -> List[Traces]:
     # get discrete values
     traces:List[Traces] = []
-    discrete_color_by_values = df[color_by].unique()
+    # dropna: a null never equals anything, so it would produce an empty "nan" trace
+    discrete_color_by_values = df[color_by].dropna().unique()
     for value in discrete_color_by_values:
         mask = df[color_by] == value
         trace:Traces = {
-           "x":df.loc[mask, trace_directive['x']].tolist(),
-        "y":df.loc[mask, trace_directive['y']].tolist(),
-        "name":value,
+        "x":json_safe_column(df.loc[mask, trace_directive['x']]),
+        "y":json_safe_column(df.loc[mask, trace_directive['y']]),
+        "name":str(value),
         "type":trace_directive['type'],
         "text":None 
         }
@@ -107,8 +116,8 @@ def create_traces(data:pd.DataFrame,
             traces.extend(give_traces_per_category(df, color_by, trace_directive))
         else:
             trace:Traces = {
-                "x":df[trace_directive['x']].tolist(),
-                "y":df[trace_directive['y']].tolist(),
+                "x":json_safe_column(df[trace_directive['x']]),
+                "y":json_safe_column(df[trace_directive['y']]),
                 "name":trace_directive['name'],
                 "type":trace_directive['type'],
                 "text":None
@@ -147,7 +156,7 @@ def get_data(database:str,
     connected_db = MySQLConnector(database_name=database)
     data:pd.DataFrame = connected_db.execute_query(query)
     return {
-        "data": data.to_dict(orient='records'),
+        "data": json_safe_records(data),
         "traces": create_traces(data=data, trace_directives=trace_directives),
         "layout":create_layout(data=data, trace_directives=trace_directives)
         }

@@ -1,0 +1,67 @@
+[
+    {
+        "type": "system",
+        "data": {
+            "content": "You are an orchestrator that has access to specialized agents.\nAny query related to employees table: always use as per following flow logic.\n```mermaid\nflowchart TD\n    subgraph DataExtractor\n        DE1[\"simplify_query\"]\n        DE2[\"query_runner\"]\n        DE1 --> |query|DE2\n  \n    end\n    subgraph QuerySimilarityCache\n        QSC1[\"get_similar_tasks\"]\n        QSC2{\"Similar Tasks Found?\"}\n        QSC1 --> |\"similar task to sql map list\"|QSC2\n        QSC3[\"store_user_task\"]\n    end\n\n    subgraph DashboardCreator\n        DC1[\"generate_plotly_vizualizer_code\"] --> |plotly_code|DC2[\"put_plotly_code_in_metadata\"]\n    end\n\n    subgraph SimilarTaskAttributes\n        STA1([mongodb_object_id])\n        STA2([query])\n    end\n    A[\"user_task\"] --> |task| QSC1\n    A --> B[\"get_database_schema\"]\n    B --> |schema| DE1\n    QSC2 --> |yes|SimilarTaskAttributes\n    STA2 --> |query|DE2\n    QSC2 --> |no|DE1\n    A --> |task|QSC3\n    DE1 --> |query|QSC3\n    DE1 --> |query|DC1\n    QSC3 --> |mongodb_object_id|DC2\n\n    STA2 --> |query|DC1\n    A --> |task|DC1\n    STA1 --> |mongodb_object_id|DC2\n    %% style SimilarTaskAttributes fill:none,stroke:none,color:transparent\n    \n```\nFor any other query answer directly from your knowledge.",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "system",
+            "name": null,
+            "id": null
+        }
+    },
+    {
+        "type": "human",
+        "data": {
+            "content": "what complex queries can you answer?",
+            "additional_kwargs": {},
+            "response_metadata": {},
+            "type": "human",
+            "name": null,
+            "id": null
+        }
+    },
+    {
+        "type": "ai",
+        "data": {
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I can help with complex questions about the **employees database**, translating plain-English requests into SQL, running the queries, and generating Plotly visualization code.\n\nExamples include:\n\n- **Compensation trends:** “Which departments had the largest increase in average salary over the last five years?”\n- **Employee rankings:** “Who are the top three highest-paid employees in each department?”\n- **Career progression:** “Which employees changed titles most often, and how did their salaries change?”\n- **Department transfers:** “How many employees moved between departments, and which transfer paths were most common?”\n- **Management comparisons:** “How does each department manager’s salary compare with their team’s average?”\n- **Tenure analysis:** “How does average salary vary by employee tenure and department?”\n- **Historical snapshots:** “What were department headcounts and average salaries on a specific date?”\n- **Outlier detection:** “Which employees earn substantially more or less than others with the same title?”\n\nThese can involve **multiple joins, aggregations, subqueries, window functions, and date-based comparisons**, depending on the available tables and database support.\n\nTell me the business question you want answered—you don’t need to write SQL.",
+                    "annotations": [],
+                    "id": "msg_012c8f7692abaa4c006af9970f278c8190911c137c5e369dcf",
+                    "phase": "final_answer"
+                }
+            ],
+            "additional_kwargs": {},
+            "response_metadata": {
+                "id": "resp_012c8f7692abaa4c006af9970e27e4819091c5a4b4c7cf946c",
+                "created_at": 1794742030.0,
+                "metadata": {},
+                "model": "gpt-6.1-sol",
+                "object": "response",
+                "service_tier": "default",
+                "status": "completed",
+                "model_provider": "openai",
+                "model_name": "gpt-6.1-sol"
+            },
+            "type": "ai",
+            "name": null,
+            "id": "resp_012c8f7692abaa4c006af9970e27e4819091c5a4b4c7cf946c",
+            "tool_calls": [],
+            "invalid_tool_calls": [],
+            "usage_metadata": {
+                "input_tokens": 675,
+                "output_tokens": 242,
+                "total_tokens": 917,
+                "input_token_details": {
+                    "cache_creation": 0,
+                    "cache_read": 0
+                },
+                "output_token_details": {
+                    "reasoning": 0
+                }
+            }
+        }
+    }
+]
