@@ -77,11 +77,12 @@ def parse_trace_directives(trace_directives:str) -> List[TraceDirectiveType]:
 
 def json_safe_records(df:pd.DataFrame) -> List[Dict[str, Any]]:
     """Rows as plain JSON types. to_json handles numpy ints/floats, NaN and Decimal,
-    which to_dict and tolist leave as objects that Flask cannot serialize."""
-    return json.loads(df.to_json(orient='records'))
+    which to_dict and tolist leave as objects that Flask cannot serialize.
+    date_format='iso' keeps dates as ISO strings instead of epoch milliseconds."""
+    return json.loads(df.to_json(orient='records', date_format='iso'))
 
 def json_safe_column(series:pd.Series) -> List[Any]:
-    return json.loads(series.to_json(orient='records'))
+    return json.loads(series.to_json(orient='records', date_format='iso'))
 
 def give_traces_per_category(df:pd.DataFrame,
                              color_by:str,

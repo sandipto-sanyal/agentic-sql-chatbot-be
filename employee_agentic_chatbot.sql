@@ -728,3 +728,6 @@ WITH active_managers AS (SELECT emp_no, dept_no FROM dept_manager WHERE from_dat
 
 -- 2026-11-15 17:29:33
 WITH manager_employees AS (SELECT e.emp_no AS manager_emp_no, CONCAT(e.first_name, ' ', e.last_name) AS manager_name, de.emp_no AS reporting_emp_no FROM dept_manager dm JOIN employees e ON e.emp_no = dm.emp_no LEFT JOIN dept_emp de ON de.dept_no = dm.dept_no AND de.from_date < dm.to_date AND dm.from_date < de.to_date AND de.emp_no <> dm.emp_no) SELECT manager_name, COUNT(DISTINCT reporting_emp_no) AS reporting_employees FROM manager_employees GROUP BY manager_emp_no, manager_name ORDER BY reporting_employees DESC, manager_name ASC, manager_emp_no ASC LIMIT 10;
+
+-- 2026-11-15 17:37:01
+WITH annual_hires AS (SELECT YEAR(hire_date) AS year, gender FROM employees), employee_counts AS (SELECT year, gender, COUNT(*) AS employee_count FROM annual_hires GROUP BY year, gender) SELECT year, gender, employee_count FROM employee_counts ORDER BY year, gender;
