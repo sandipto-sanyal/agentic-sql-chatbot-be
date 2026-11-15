@@ -25,6 +25,7 @@ from dotenv import load_dotenv
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import SamplingMessage, TextContent
 
+import dashboard as dash
 from chat_logger import get_logger
 from document_search import search_similar
 from document_update import update_metadata
@@ -39,7 +40,7 @@ ORCHESTRATOR_FLOW_MMD = os.environ.get("ORCHESTRATOR_FLOW_MMD", "orchestrator_fl
 
 mcp = FastMCP(
     "demo-http",
-    host="0.0.0.0",      # use 127.0.0.1 for local-only
+    host="127.0.0.1",      # use 127.0.0.1 for local-only
     port=8000,
     stateless_http=True, # no per-session state; easier to scale/deploy
     json_response=True,  # plain JSON replies instead of SSE streams
@@ -134,7 +135,7 @@ async def query_runner(query: str, database: str, ctx: Context) -> str:
 ({len(query_result)} Rows, {len(query_result.columns)} Columns)
 """
     await emit(ctx, "QueryRunnerMessage", "query_runner", markdown)
-    return "Request Completed. Result masked and not presented to LLM for privacy reasons"
+    return markdown
 
 
 @mcp.tool()
@@ -203,6 +204,49 @@ def put_plotly_code_in_metadata(mongodb_object_id: str, plotly_code: str, dashbo
 
 
 # --------------------------------------------------------------------------- #
+# Dashboard tools (converted from the Flask /api/* routes in app.py).
+# --------------------------------------------------------------------------- #
+
+@mcp.tool()
+def get_dashboards(database: str, id: str | None = None) -> Any:
+    """Lists the saved dashboards for a database. Pass id to get a single dashboard."""
+    return json.loads(json.dumps(dash.get_dashboards(database, id), default=str))
+
+
+@mcp.tool()
+async def get_dashboard_data(database: str, query: str, plotly_code: str, ctx: Context) -> Dict[str, str]:
+    """Runs a dashboard's SQL and builds its chart data.
+    The rows and chart data are shown to the user only. The planner receives a masked status.
+    """
+    data = await asyncio.to_thread(dash.get_data, database=database, query=query, trace_directives=plotly_code)
+    await emit(ctx, "DashboardDataMessage", "get_dashboard_data", data)
+    return {"status": "Request Completed. Dashboard data sent to the UI and masked for privacy reasons"}
+
+
+@mcp.tool()
+def delete_dashboard(database: str, dashboard_id: str) -> Dict[str, int]:
+    """Deletes a saved dashboard. The dashboard must belong to the given database."""
+    deleted = dash.delete_dashboard(database, dashboard_id)
+    if deleted == 0:
+        raise ValueError("dashboard not found")
+    return {"deleted": deleted}
+
+
+@mcp.tool()
+async def try_dashboard_regeneration(mongodb_object_id: str, query: str, task: str, ctx: Context,
+                                     extra_instruction: str = "") -> Dict[str, int]:
+    """Regenerates a dashboard's Plotly code and description using the client's LLM (sampling),
+    then saves them on the dashboard. extra_instruction is optional, for example 'use a bar chart'.
+    """
+    task_text = f"{task}\n{extra_instruction}" if extra_instruction else task
+    generated = await generate_plotly_vizualizer_code(query=query, task=task_text, ctx=ctx)
+    return put_plotly_code_in_metadata(
+        mongodb_object_id=mongodb_object_id,
+        plotly_code=generated["plotly_code"],
+        dashboard_description=generated["dashboard_description"],
+    )
+
+# --------------------------------------------------------------------------- #
 # Prompt. The client fetches this and uses it as the planner's system prompt.
 # --------------------------------------------------------------------------- #
 
@@ -214,4 +258,15 @@ def orchestrator_prompt() -> str:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Employee chatbot MCP server")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "streamable-http"],
+        default="streamable-http",
+        help="stdio for Claude Desktop and Inspector (launched by the client); "
+             "streamable-http serves http://127.0.0.1:8000/mcp",
+    )
+    args = parser.parse_args()
+    mcp.run(transport=args.transport)

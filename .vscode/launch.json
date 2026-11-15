@@ -36,6 +36,14 @@
             "program": "${workspaceFolder}/dashboard.py",
             "console": "integratedTerminal",
             "python": "C:\\Users\\sandi\\python_venvs\\python313\\Scripts\\python.exe",            
+        },
+        {
+            "name": "Python Debugger: mcp",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/employee_agentic_chatbot_mcp.py",
+            "console": "integratedTerminal",
+            "python": "C:\\Users\\sandi\\python_venvs\\python313\\Scripts\\python.exe",            
         }
     ]
 }

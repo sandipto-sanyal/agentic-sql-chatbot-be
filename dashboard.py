@@ -10,8 +10,6 @@ import pandas as pd
 import json
 import re
 import ast
-from employee_agentic_chatbot import generate_plotly_vizualizer_code, \
-    put_plotly_code_in_metadata
 
 
 class TraceDirectiveType(TypedDict):
@@ -132,7 +130,10 @@ def regenerate_dashboard(
     task:str,
     extra_instruction:str=""
 ):
-    '''Regenerates the dashboard logic using LLM'''
+    '''Regenerates the dashboard logic using LLM (Flask path, used by app.py).
+    The MCP server does this through sampling instead; see employee_agentic_chatbot_mcp.py.'''
+    # imported here so importing dashboard.py does not load the LLM orchestrator module
+    from employee_agentic_chatbot import generate_plotly_vizualizer_code, put_plotly_code_in_metadata
     plotly_details = generate_plotly_vizualizer_code.invoke(
         {"query": query, "task":task+extra_instruction}
     )

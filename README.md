@@ -145,3 +145,91 @@ pipeline = [
 ```
 
 3. For keyword search with ranking, Atlas Search offers a `$search` stage with a `text` operator (`{"text": {"query": "...", "path": "text"}}`), which needs a Search index on `text`. Atlas also supports `$rankFusion` for combining vector and text results in one query, which removes the Python merge in Method 4.
+
+
+---
+
+# Running the MCP server (employee chatbot tools)
+
+`employee_agentic_chatbot_mcp.py` exposes the chatbot's tools over the Model Context Protocol (MCP). The server does **not** call an LLM. Tools that need model output (`simplify_query` and `generate_plotly_vizualizer_code`) ask the connected client to run the completion through MCP *sampling*.
+
+## Prerequisites
+
+- A Python environment with the dependencies installed: `pip install -r requirements.txt`
+- A `.env` file with the MySQL and MongoDB settings the project already uses.
+- Optional: `ORCHESTRATOR_FLOW_MMD` in `.env`. It defaults to `orchestrator_flow_plotly.mmd`.
+- Logs go to `logs/chatbot.log`. Nothing is printed to the console, so stdio clients can read the protocol cleanly.
+
+Tools exposed: `get_database_schema`, `query_runner`, `simplify_query`, `store_user_task`, `get_similar_tasks`, `generate_plotly_vizualizer_code`, `put_plotly_code_in_metadata`, `get_dashboards`, `get_dashboard_data`, `delete_dashboard`, `try_dashboard_regeneration`.
+Prompt exposed: `orchestrator` (the planner's system prompt, with the flow diagram filled in).
+
+Use the absolute path to the Python interpreter that has the requirements installed, for example `C:\Users\<you>\python_venvs\python313\Scripts\python.exe`. Replace the placeholders below with your own paths.
+
+## Option 1: MCP Inspector (recommended for testing)
+
+The Inspector needs Node.js. It starts the server for you in stdio mode.
+
+1. Run `npx @modelcontextprotocol/inspector` and open the URL it prints (usually `http://localhost:6274`).
+2. Set the connection fields:
+   - **Transport Type:** `STDIO`
+   - **Command:** `C:\path\to\python.exe`
+   - **Arguments:** `"C:\path\to\agentic-chatbot-be\employee_agentic_chatbot_mcp.py" --transport stdio`
+3. Click **Connect**. Open **Tools**, choose a tool, fill in its parameters, and click **Run Tool**.
+4. For `simplify_query` and `generate_plotly_vizualizer_code`, the Inspector receives sampling requests from the server. Answer them in the Inspector's sampling panel with the text the model should return.
+
+To run the server over HTTP instead:
+
+1. Start it with `python employee_agentic_chatbot_mcp.py`. The default transport is `streamable-http`, served at `http://127.0.0.1:8000/mcp`.
+2. In the Inspector, choose **Transport Type:** `Streamable HTTP` and enter the URL above.
+
+The server binds to `0.0.0.0` by default, so it is reachable from other machines on your network. Change `host` to `127.0.0.1` in the `FastMCP(...)` call for local-only access.
+
+## Option 2: Claude Desktop
+
+1. Open the Claude Desktop config file:
+   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+2. Add the server under `mcpServers`:
+
+```json
+{
+  "mcpServers": {
+    "employee-chatbot": {
+      "command": "C:\path\to\python.exe",
+      "args": [
+        "C:\path\to\agentic-chatbot-be\employee_agentic_chatbot_mcp.py",
+        "--transport",
+        "stdio"
+      ]
+    }
+  }
+}
+```
+
+3. Add the server with HTTP transport
+```json
+{
+  "mcpServers": {
+    "demo-http": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://127.0.0.1:9000/api/mcp"]
+    }
+  }
+}
+```
+
+3. Quit Claude Desktop completely (from the system tray, choose **Quit**), then reopen it.
+4. Open a new chat and check the tools icon in the input box. `employee-chatbot` should be listed with its tools.
+
+In Claude Desktop, Claude is the planner. It chooses which tools to call, so the `orchestrator` prompt is only a reference.
+
+**Limitations to know before you test:**
+- Claude Desktop may not support MCP sampling. If `simplify_query` or `generate_plotly_vizualizer_code` fails with `Sampling not supported`, use the Inspector for those two tools. The other tools work without sampling.
+- Query rows are sent as log notifications, not as tool results. Claude Desktop may not display them. Claude only sees the masked status, which is the intended privacy behavior.
+
+## Troubleshooting
+
+- **`ModuleNotFoundError`:** the command is using a Python that doesn't have the requirements installed. Point `command` at the correct interpreter.
+- **Server fails to start:** check `logs/chatbot.log` in this project. For Claude Desktop, the MCP logs are usually under `%APPDATA%\Claude\logs\`.
+- **Garbled protocol or connection errors in stdio mode:** something is printing to stdout. Send debug output to stderr instead.
+- **Port 8000 already in use (HTTP mode):** stop the other process, or change the `port` in the `FastMCP(...)` call.

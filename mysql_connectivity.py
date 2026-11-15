@@ -11,6 +11,7 @@ alongside this module with the following keys:
 """
 
 import os
+import sys
 
 import mysql.connector
 from mysql.connector import Error
@@ -59,7 +60,8 @@ class MySQLConnector:
                 # timeout=30
             )
             if self.connection.is_connected():
-                print(f"Connected to MySQL database '{self.database}'.")
+                # stderr: stdout carries the MCP protocol when the server runs over stdio
+                print(f"Connected to MySQL database '{self.database}'.", file=sys.stderr)
             return self.connection
         except Error as e:
             raise ConnectionError(f"Failed to connect to MySQL: {e}") from e
@@ -98,7 +100,7 @@ class MySQLConnector:
         if self.connection is not None and self.connection.is_connected():
             self.connection.close()
             self.connection = None
-            print("MySQL connection closed.")
+            print("MySQL connection closed.", file=sys.stderr)
 
     # Allow use as a context manager: `with MySQLConnector() as db: ...`
     def __enter__(self):

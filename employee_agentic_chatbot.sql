@@ -737,3 +737,12 @@ WITH active_dept_emp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9
 
 -- 2026-11-15 18:49:59
 SELECT * FROM x
+
+-- 2026-11-15 20:14:34
+SELECT table_name, column_name, column_type, is_nullable, column_key FROM information_schema.columns WHERE table_schema = 'employees' ORDER BY table_name, ordinal_position
+
+-- 2026-11-15 20:21:02
+SELECT e.emp_no, e.first_name, e.last_name, s.salary FROM employees e JOIN salaries s ON e.emp_no = s.emp_no WHERE s.to_date = '9999-01-01' ORDER BY s.salary DESC LIMIT 10
+
+-- 2026-11-15 20:24:38
+SELECT e.emp_no, e.first_name, e.last_name, s.salary FROM employees e JOIN salaries s ON e.emp_no = s.emp_no WHERE s.to_date = '9999-01-01' ORDER BY s.salary DESC LIMIT 10
