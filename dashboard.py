@@ -128,11 +128,12 @@ def create_traces(data:pd.DataFrame,
 def regenerate_dashboard(
     mongodb_object_id:str,
     query:str,
-    task:str
+    task:str,
+    extra_instruction:str=""
 ):
     '''Regenerates the dashboard logic using LLM'''
     plotly_details = generate_plotly_vizualizer_code.invoke(
-        {"query": query, "task":task}
+        {"query": query, "task":task+extra_instruction}
     )
     output = put_plotly_code_in_metadata.invoke({**plotly_details, "mongodb_object_id":mongodb_object_id})
     return output

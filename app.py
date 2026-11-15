@@ -68,7 +68,8 @@ def dashboard_regeneration():
     output = regenerate_dashboard(
         mongodb_object_id=request.json['mongodb_object_id'],
         query = request.json['query'],
-        task = request.json['task']
+        task = request.json['task'],
+        extra_instruction=request.json.get('extra_instruction',"")
     )
     return jsonify(output), 200
 
