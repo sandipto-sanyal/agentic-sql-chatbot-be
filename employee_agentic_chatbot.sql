@@ -746,3 +746,6 @@ SELECT e.emp_no, e.first_name, e.last_name, s.salary FROM employees e JOIN salar
 
 -- 2026-11-15 20:24:38
 SELECT e.emp_no, e.first_name, e.last_name, s.salary FROM employees e JOIN salaries s ON e.emp_no = s.emp_no WHERE s.to_date = '9999-01-01' ORDER BY s.salary DESC LIMIT 10
+
+-- 2026-11-15 23:04:51
+WITH annual_hires AS (SELECT YEAR(hire_date) AS hire_year, COUNT(*) AS hires FROM employees GROUP BY YEAR(hire_date)), hiring_changes AS (SELECT hire_year, hires, LAG(hires) OVER (ORDER BY hire_year) AS previous_year_hires FROM annual_hires) SELECT hire_year, hires, hires - previous_year_hires AS yoy_change, ROUND(100.0 * (hires - previous_year_hires) / NULLIF(previous_year_hires, 0), 2) AS yoy_change_pct FROM hiring_changes ORDER BY hire_year;

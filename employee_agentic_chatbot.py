@@ -4,7 +4,7 @@ import sys
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool, InjectedToolArg
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
-from langchain_core.messages import message_to_dict
+from langchain_core.messages import BaseMessage, message_to_dict, messages_from_dict
 # from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 import json
 from typing import *
@@ -241,18 +241,51 @@ def send_ws_message(server_message:Dict[Any, Any], ws:Server|None = None):
     if isinstance(ws, Server):
         ws.send(json.dumps(server_message))
         
-def dump_messages(messages:List[SystemMessage | HumanMessage | AIMessage | ToolMessage]):
+def memory_path(chatsession_timestamp:str) -> str:
     # no colons: Windows does not allow ':' in file names
-    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    serialized_messages = [
-    message_to_dict(message) for message in messages
-    ]
-    with open(f"./memory/{now}.json", "w", encoding="utf-8") as f:
-        json.dump(serialized_messages, f, indent=4, ensure_ascii=False, default=str)        
-        
+    return f"./memory/{chatsession_timestamp}.json"
+
+# How many earlier user turns are sent back to the orchestrator with each new task.
+MEMORY_TURNS = int(os.environ.get("MEMORY_TURNS", "3"))
+
+def load_memory(chatsession_timestamp:str) -> List[BaseMessage]:
+    """Messages from the last MEMORY_TURNS turns of this chat session, without system prompts.
+
+    A turn starts at a HumanMessage. The cut is made only there, so a tool result is never
+    sent without the tool call that asked for it. The system prompt is rebuilt on every run,
+    so an updated flow diagram takes effect immediately. A missing, empty or unreadable
+    memory file means no history.
+    """
+    path = memory_path(chatsession_timestamp)
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            serialized = json.load(f)
+        history = messages_from_dict(serialized)
+    except (json.JSONDecodeError, KeyError, ValueError):
+        logger.warning("could not read memory file %s; starting without history", path, exc_info=True)
+        return []
+    history = [message for message in history if not isinstance(message, SystemMessage)]
+    turn_starts = [i for i, message in enumerate(history) if isinstance(message, HumanMessage)]
+    if len(turn_starts) > MEMORY_TURNS:
+        history = history[turn_starts[-MEMORY_TURNS]:]
+    return history
+
+def dump_messages(messages:List[SystemMessage | HumanMessage | AIMessage | ToolMessage],
+                  chatsession_timestamp:str
+                  ):
+    # The loaded history is part of `messages`, so the file is rewritten in full
+    # rather than appended to. Appending would duplicate earlier turns.
+    serialized_messages = [message_to_dict(message) for message in messages]
+    with open(memory_path(chatsession_timestamp), "w", encoding="utf-8") as f:
+        json.dump(serialized_messages, f, indent=4, ensure_ascii=False, default=str)
+
+
 
 def orchestrator(user_task: str, 
                  database:str,
+                 chatsession_timestamp:str,
                  max_steps: int = 8,
                  ws:Server|None=None) -> Tuple[str, int]:
     """Drive the multi-agent workflow until the orchestrator produces a final answer."""
@@ -287,8 +320,12 @@ def orchestrator(user_task: str,
 
     # orchestrator = ChatOpenAI(model=ORCHESTRATOR_MODEL, temperature=0.2).bind_tools(SUBAGENTS)
 
+    # system prompt first, then this session's earlier turns, then the new task
+    history = load_memory(chatsession_timestamp)
+    logger.info("orchestrator loaded %d earlier messages for session %s", len(history), chatsession_timestamp)
     messages:List[SystemMessage | HumanMessage | AIMessage | ToolMessage] = [
         SystemMessage(ORCHESTRATOR_SYSTEM_PROMPT),
+        *history,
         HumanMessage(user_task),
     ]
     # One database connection per orchestrator invocation, shared by all sub-agents
@@ -353,7 +390,7 @@ def orchestrator(user_task: str,
                                 "content":result
                                 }, ws)
     finally:
-        dump_messages(messages)
+        dump_messages(messages, chatsession_timestamp)
         connected_db.close()
 
     logger.warning("orchestrator hit max_steps=%s without a final answer", max_steps)

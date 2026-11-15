@@ -11,6 +11,10 @@ from flask_cors import CORS
 from dashboard import get_dashboards, get_data, delete_dashboard as delete_dashboard_record,\
     regenerate_dashboard
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+
 app = Flask(__name__)
 sock = Sock(app)
 logger = get_logger(__name__)
@@ -76,6 +80,7 @@ def dashboard_regeneration():
 @sock.route("/ws")
 def websocket(ws:simple_websocket.ws.Server):
     try:
+        now = datetime.now(ZoneInfo("Asia/Kolkata")).isoformat().replace(":","_")
         while True:
             msg = str(ws.receive())
             msg = json.loads(msg)
@@ -83,6 +88,7 @@ def websocket(ws:simple_websocket.ws.Server):
             try:
                 orchestrator_response, step = orchestrator(user_task=msg['task'], 
                                                         database=msg['database'],
+                                                        chatsession_timestamp=now,
                                                         ws=ws)
             except Exception:
                 orchestrator_response = "Something went wrong while answering"
