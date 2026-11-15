@@ -731,3 +731,9 @@ WITH manager_employees AS (SELECT e.emp_no AS manager_emp_no, CONCAT(e.first_nam
 
 -- 2026-11-15 17:37:01
 WITH annual_hires AS (SELECT YEAR(hire_date) AS year, gender FROM employees), employee_counts AS (SELECT year, gender, COUNT(*) AS employee_count FROM annual_hires GROUP BY year, gender) SELECT year, gender, employee_count FROM employee_counts ORDER BY year, gender;
+
+-- 2026-11-15 18:06:51
+WITH active_dept_emp AS (SELECT emp_no, dept_no FROM dept_emp WHERE to_date = '9999-01-01'), active_salaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01') SELECT d.dept_name AS department, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN active_dept_emp de ON d.dept_no = de.dept_no JOIN active_salaries s ON de.emp_no = s.emp_no GROUP BY d.dept_no, d.dept_name ORDER BY average_salary DESC;
+
+-- 2026-11-15 18:49:59
+SELECT * FROM x
