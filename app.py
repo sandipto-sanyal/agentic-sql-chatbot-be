@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory, abort
 from flask_sock import Sock
 import simple_websocket
 from typing import *
@@ -14,8 +14,17 @@ from dashboard import get_dashboards, get_data, delete_dashboard as delete_dashb
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UI_DIST_DIR = os.path.join(BASE_DIR, "ui_dist")
 
-app = Flask(__name__)
+
+app = Flask(
+    "flask_app",
+    static_folder=UI_DIST_DIR,   # absolute path, so root_path no longer matters
+    static_url_path="",
+    root_path=BASE_DIR,
+)
+
 sock = Sock(app)
 logger = get_logger(__name__)
 
@@ -39,9 +48,10 @@ class WebsocketResponseType(TypedDict):
     step: int
     content:str
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+@app.route("/health_check")
+def health_check():
+    return jsonify(status="ok")
+
 
 @app.route("/api/get_dashboards", methods=["POST"])
 def get_dashobards():
@@ -49,6 +59,12 @@ def get_dashobards():
     id = request.json.get("id")
     dashboards = get_dashboards(database, id)
     return jsonify(dashboards), 200
+
+@app.route("/api/get_mermaid", methods=['GET'])
+def get_mermaid():
+    with open(os.environ['ORCHESTRATOR_FLOW_MMD'], 'r') as f:
+        mermaid = f.read()
+    return jsonify({"mermaid": mermaid}), 200
 
 @app.route("/api/get_data", methods=["GET"])
 def get_data_route():
@@ -86,7 +102,7 @@ def dashboard_regeneration():
     )
     return jsonify(output), 200
 
-@sock.route("/ws")
+@sock.route("/chat")
 def websocket(ws:simple_websocket.ws.Server):
     try:
         now = datetime.now(ZoneInfo("Asia/Kolkata")).isoformat().replace(":","_")
@@ -122,6 +138,23 @@ def websocket(ws:simple_websocket.ws.Server):
                     }
         ws.send(websocket_response)
     
+
+# Serve the React build from ui_dist/. Real files (assets/*.js, *.css, favicon) are served
+# as themselves, so the browser gets the right MIME type. Any other path returns index.html,
+# so client-side routes such as /chat still load the app.
+# Path to the compiled output (adjust to your layout)
+# Serve the compiled UI; unknown paths fall back to index.html for client-side routing
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_ui(path):
+    if path.startswith("api/") or path == "health_check":
+        abort(404)
+    file_path = os.path.join(app.static_folder, path)
+    if path and os.path.isfile(file_path):
+        return send_from_directory(app.static_folder, path)
+    return send_from_directory(app.static_folder, "index.html")
+ 
+
 
 if __name__ == "__main__":
     # Run with Hypercorn for WebSocket support:

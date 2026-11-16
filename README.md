@@ -1,5 +1,113 @@
-# sample_flask_project
- This is a sample flask project
+# Overview
+
+An agentic chatbot that answers plain-English questions about a MySQL employee database. It plans each request, writes and runs SQL, remembers earlier answers, and turns results into saved, auto-generated dashboards. Enterprise rows never go to the language model.
+
+## What it does
+
+- **Ask in plain English.** An orchestrator model plans the steps: read the schema, look for a similar past question, write the SQL, run it, and answer.
+- **Reuses past work.** Each task is stored with a vector embedding. A similar question skips SQL generation and reuses the saved query.
+- **Keeps data private.** The planner receives the question, table and column names, the SQL it wrote, and a masked status. Result rows go only to the UI.
+- **Builds dashboards automatically.** Each answer can become a saved Plotly chart. Dashboards re-run their SQL when opened, so the data is current.
+- **Remembers the conversation.** Each chat session keeps its own memory file. The last few turns are sent back to the planner.
+- **Exposes its tools over MCP.** An MCP server offers the same tools to clients such as Claude Desktop and the MCP Inspector. The server never calls a model itself. It asks the client through sampling.
+
+# Sample Video
+[![
+Agentic Chatbot](https://img.youtube.com/vi/b9-KitMKe50/maxresdefault.jpg)](https://www.youtube.com/watch?v=b9-KitMKe50)
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI["React UI<br/>(agentic-chatbot-ui)"] -- "websocket /chat" --> API["Flask app<br/>app.py"]
+    UI -- "REST /api/*" --> API
+    API --> ORCH["Orchestrator<br/>employee_agentic_chatbot.py"]
+    ORCH -- "Azure OpenAI" --> LLM[(LLM deployments)]
+    ORCH --> TOOLS["Sub-agent tools"]
+    TOOLS --> MYSQL[(MySQL<br/>employees)]
+    TOOLS --> MONGO[(MongoDB / Cosmos DB<br/>vectors + dashboards)]
+    MCP["MCP server<br/>employee_agentic_chatbot_mcp.py"] --> MYSQL
+    MCP --> MONGO
+    CLIENT["MCP client<br/>Claude Desktop / Inspector"] -- "tools, prompts, sampling" --> MCP
+```
+
+Two ways to run the same tools:
+
+| Path | Entry point | Who calls the LLM |
+|---|---|---|
+| Web app | `app.py` (Flask + websocket + serves the React build) | The backend, through `employee_agentic_chatbot.py` |
+| MCP server | `employee_agentic_chatbot_mcp.py` | The connected client, through MCP sampling. The server calls no model. |
+
+## Key features by module
+
+| Module | Responsibility |
+|---|---|
+| `app.py` | HTTP and websocket routes. Serves the built React app from `ui_dist/`. |
+| `employee_agentic_chatbot.py` | Orchestrator loop, sub-agents, and session memory (`load_memory` / `dump_messages`). |
+| `employee_agentic_chatbot_mcp.py` | The same tools as an MCP server, with sampling and an `orchestrator` prompt. |
+| `dashboard.py` | Saved dashboards: list, delete, build chart traces, regenerate. |
+| `vector_store.py`, `document_search.py`, `document_update.py`, `embeddings.py` | Vector storage and similarity search for past tasks. |
+| `mysql_connectivity.py` | MySQL access. |
+| `chat_logger.py` | Logging to `logs/chatbot.log`. |
+| `system_prompts/`, `user_prompts/` | Prompt templates for the planner and sub-agents. |
+| `orchestrator_flow_plotly.mmd` | The flow diagram shown in the UI and given to the planner. |
+
+## Main endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| WebSocket | `/chat` | Send `{task, database}`, receive progress and the final answer |
+| GET | `/health_check` | Health check |
+| GET | `/api/get_mermaid` | Orchestrator flow diagram source |
+| POST | `/api/get_dashboards` | Saved dashboards for a database |
+| GET | `/api/get_data?database=&mongodb_object_id=` | Run a dashboard's query and return its chart data |
+| DELETE | `/api/delete_dashboard` | Delete a dashboard |
+| POST | `/api/try_dashboard_regeneration` | Regenerate a dashboard's chart with an optional instruction |
+
+## Configuration
+
+Set these in `.env`. Values are not listed here.
+
+| Group | Variables |
+|---|---|
+| Azure OpenAI | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION`, `ORCHESTRATOR_MODEL`, `SUBAGENT_MODEL` |
+| MySQL | `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE` |
+| MongoDB / Cosmos DB | `MONGODB_URI`, `MONGODB_VECTOR_DB`, `MONGODB_COLLECTION` |
+| Embeddings | `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS`, `SEARCH_SCORE_THRESHOLD` |
+| App | `CORS_ORIGIN_LIST`, `LOG_LEVEL`, `ORCHESTRATOR_FLOW_MMD`, `MEMORY_TURNS` (in code, default 3) |
+
+## Project layout
+
+```
+agentic-chatbot-be/
+├── app.py                          # Flask app, websocket, REST routes
+├── employee_agentic_chatbot.py     # Orchestrator and sub-agents (LLM via Azure OpenAI)
+├── employee_agentic_chatbot_mcp.py # MCP server (sampling, no LLM calls)
+├── dashboard.py                    # Dashboard logic
+├── vector_store.py                 # Vector store and similarity search
+├── mysql_connectivity.py           # MySQL connector
+├── system_prompts/  user_prompts/  # Prompt templates
+├── memory/                         # Per-session chat memory (JSON)
+├── logs/                           # chatbot.log
+├── ui_dist/                        # Built React UI, served by app.py
+└── requirements.txt
+```
+
+## Getting started
+
+1. Create a Python environment and install the requirements:
+   `pip install -r requirements.txt`
+2. Fill in `.env` with the variables above.
+3. Run the web app with `python app.py`, then open `http://127.0.0.1:5000`.
+4. To use the tools from Claude Desktop or the MCP Inspector, see [Running the MCP server](#running-the-mcp-server-employee-chatbot-tools).
+
+The sections below cover setup, debugging, MongoDB search, and the MCP server in more detail.
+
+---
+
+# Project notes
+
+This is a sample flask project
  
  # Setup
  Using any environment creation tool create a new environment. Below example shows how to do it from conda
@@ -233,3 +341,5 @@ In Claude Desktop, Claude is the planner. It chooses which tools to call, so the
 - **Server fails to start:** check `logs/chatbot.log` in this project. For Claude Desktop, the MCP logs are usually under `%APPDATA%\Claude\logs\`.
 - **Garbled protocol or connection errors in stdio mode:** something is printing to stdout. Send debug output to stderr instead.
 - **Port 8000 already in use (HTTP mode):** stop the other process, or change the `port` in the `FastMCP(...)` call.
+
+
