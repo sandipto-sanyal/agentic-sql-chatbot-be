@@ -764,3 +764,39 @@ WITH RECURSIVE years AS (SELECT YEAR(MIN(from_date)) AS y FROM dept_emp WHERE fr
 
 -- 2026-11-16 12:11:47
 WITH ActiveDeptEmp AS (SELECT dept_no, emp_no FROM dept_emp WHERE to_date = '9999-01-01'), ActiveSalaries AS (SELECT emp_no, salary FROM salaries WHERE to_date = '9999-01-01'), DeptAvgSalaries AS (SELECT d.dept_no, d.dept_name, ROUND(AVG(s.salary), 2) AS average_salary FROM departments d JOIN ActiveDeptEmp de ON de.dept_no = d.dept_no JOIN ActiveSalaries s ON s.emp_no = de.emp_no GROUP BY d.dept_no, d.dept_name) SELECT dept_name AS department, average_salary FROM DeptAvgSalaries ORDER BY average_salary DESC;
+
+-- 2026-11-23 11:21:35
+SELECT d.dept_name, COUNT(*) AS employee_count, ROUND(AVG(s.salary), 2) AS avg_salary FROM departments d JOIN dept_emp de ON de.dept_no = d.dept_no AND de.to_date = '9999-01-01' JOIN salaries s ON s.emp_no = de.emp_no AND s.to_date = '9999-01-01' GROUP BY d.dept_no, d.dept_name ORDER BY avg_salary DESC
+
+-- 2026-11-23 11:28:22
+SELECT t.title, e.gender, COUNT(*) AS employee_count FROM titles t JOIN employees e ON e.emp_no = t.emp_no WHERE t.to_date = '9999-01-01' GROUP BY t.title, e.gender ORDER BY t.title, e.gender
+
+-- 2026-11-23 11:31:49
+SELECT YEAR(hire_date) AS hire_year, COUNT(*) AS hires FROM employees GROUP BY YEAR(hire_date) ORDER BY hire_year
+
+-- 2026-11-23 12:00:33
+SELECT YEAR(hire_date) AS hire_year, gender, COUNT(*) AS hires FROM employees GROUP BY YEAR(hire_date), gender ORDER BY hire_year, gender
+
+-- 2026-11-23 12:01:58
+SELECT YEAR(hire_date) AS hire_year, gender, COUNT(*) AS hires FROM employees GROUP BY YEAR(hire_date), gender ORDER BY hire_year, gender
+
+-- 2026-11-23 12:15:22
+SELECT YEAR(hire_date) AS hire_year, SUM(gender = 'M') AS male_hires, SUM(gender = 'F') AS female_hires, COUNT(*) AS total_hires, ROUND(100 * SUM(gender = 'F') / COUNT(*), 1) AS pct_female FROM employees GROUP BY YEAR(hire_date) ORDER BY hire_year
+
+-- 2026-11-23 13:26:57
+SELECT YEAR(hire_date) AS hire_year, gender, COUNT(*) AS hires FROM employees GROUP BY YEAR(hire_date), gender ORDER BY hire_year, gender
+
+-- 2026-11-23 14:31:37
+SELECT d.dept_name, COUNT(*) AS active_employees FROM dept_emp de JOIN departments d ON d.dept_no = de.dept_no WHERE de.to_date >= CURDATE() GROUP BY d.dept_no, d.dept_name ORDER BY active_employees DESC
+
+-- 2026-11-23 14:32:13
+WITH RECURSIVE years AS (SELECT 1985 AS yr UNION ALL SELECT yr + 1 FROM years WHERE yr < 2002) SELECT y.yr AS year, d.dept_name, COUNT(de.emp_no) AS active_employees FROM years y CROSS JOIN departments d LEFT JOIN dept_emp de ON de.dept_no = d.dept_no AND de.from_date <= MAKEDATE(y.yr, 365) AND de.to_date > MAKEDATE(y.yr, 365) GROUP BY y.yr, d.dept_no, d.dept_name ORDER BY y.yr, d.dept_name
+
+-- 2026-11-23 14:32:49
+SELECT y.yr AS year, d.dept_name, COUNT(*) AS active_employees FROM (SELECT 1985 yr, DATE '1985-12-31' dt UNION ALL SELECT 1986, '1986-12-31' UNION ALL SELECT 1987, '1987-12-31' UNION ALL SELECT 1988, '1988-12-31' UNION ALL SELECT 1989, '1989-12-31' UNION ALL SELECT 1990, '1990-12-31' UNION ALL SELECT 1991, '1991-12-31' UNION ALL SELECT 1992, '1992-12-31' UNION ALL SELECT 1993, '1993-12-31' UNION ALL SELECT 1994, '1994-12-31' UNION ALL SELECT 1995, '1995-12-31' UNION ALL SELECT 1996, '1996-12-31' UNION ALL SELECT 1997, '1997-12-31' UNION ALL SELECT 1998, '1998-12-31' UNION ALL SELECT 1999, '1999-12-31' UNION ALL SELECT 2000, '2000-12-31' UNION ALL SELECT 2001, '2001-12-31' UNION ALL SELECT 2002, '2002-12-31') y JOIN dept_emp de ON de.from_date <= y.dt AND de.to_date > y.dt JOIN departments d ON d.dept_no = de.dept_no GROUP BY y.yr, d.dept_no, d.dept_name ORDER BY y.yr, d.dept_name
+
+-- 2026-11-23 14:33:12
+SELECT y.yr AS year, SUM(d.dept_name='Development') AS Development, SUM(d.dept_name='Production') AS Production, SUM(d.dept_name='Sales') AS Sales, SUM(d.dept_name='Customer Service') AS CustomerService, SUM(d.dept_name='Research') AS Research, SUM(d.dept_name='Marketing') AS Marketing, SUM(d.dept_name='Quality Management') AS QualityMgmt, SUM(d.dept_name='Human Resources') AS HR, SUM(d.dept_name='Finance') AS Finance FROM (SELECT 1985 yr, DATE '1985-12-31' dt UNION ALL SELECT 1986, '1986-12-31' UNION ALL SELECT 1987, '1987-12-31' UNION ALL SELECT 1988, '1988-12-31' UNION ALL SELECT 1989, '1989-12-31' UNION ALL SELECT 1990, '1990-12-31' UNION ALL SELECT 1991, '1991-12-31' UNION ALL SELECT 1992, '1992-12-31' UNION ALL SELECT 1993, '1993-12-31' UNION ALL SELECT 1994, '1994-12-31' UNION ALL SELECT 1995, '1995-12-31' UNION ALL SELECT 1996, '1996-12-31' UNION ALL SELECT 1997, '1997-12-31' UNION ALL SELECT 1998, '1998-12-31' UNION ALL SELECT 1999, '1999-12-31' UNION ALL SELECT 2000, '2000-12-31' UNION ALL SELECT 2001, '2001-12-31' UNION ALL SELECT 2002, '2002-12-31') y JOIN dept_emp de ON de.from_date <= y.dt AND de.to_date > y.dt JOIN departments d ON d.dept_no = de.dept_no GROUP BY y.yr ORDER BY y.yr
+
+-- 2026-11-23 14:53:15
+SELECT d.dept_name, CONCAT(m.first_name,' ',m.last_name) AS manager, dm.from_date AS mgr_from, dm.to_date AS mgr_to, SUM(YEAR(e.hire_date)=1985) y1985, SUM(YEAR(e.hire_date)=1986) y1986, SUM(YEAR(e.hire_date)=1987) y1987, SUM(YEAR(e.hire_date)=1988) y1988, SUM(YEAR(e.hire_date)=1989) y1989, SUM(YEAR(e.hire_date)=1990) y1990, SUM(YEAR(e.hire_date)=1991) y1991, SUM(YEAR(e.hire_date)=1992) y1992, SUM(YEAR(e.hire_date)=1993) y1993, SUM(YEAR(e.hire_date)=1994) y1994, SUM(YEAR(e.hire_date)=1995) y1995, SUM(YEAR(e.hire_date)=1996) y1996, SUM(YEAR(e.hire_date)=1997) y1997, SUM(YEAR(e.hire_date)=1998) y1998, SUM(YEAR(e.hire_date)=1999) y1999, SUM(YEAR(e.hire_date)=2000) y2000, SUM(YEAR(e.hire_date)=2001) y2001, SUM(YEAR(e.hire_date)=2002) y2002, COUNT(*) AS total_hires FROM dept_manager dm JOIN departments d ON d.dept_no = dm.dept_no JOIN employees m ON m.emp_no = dm.emp_no JOIN dept_emp de ON de.dept_no = dm.dept_no JOIN employees e ON e.emp_no = de.emp_no AND e.hire_date = de.from_date AND e.hire_date BETWEEN dm.from_date AND dm.to_date GROUP BY dm.dept_no, dm.emp_no, dm.from_date, dm.to_date, d.dept_name, manager ORDER BY d.dept_name, dm.from_date

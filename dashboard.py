@@ -10,6 +10,7 @@ import pandas as pd
 import json
 import re
 import ast
+import plotly.express as px
 
 
 class TraceDirectiveType(TypedDict):
@@ -23,7 +24,7 @@ class TraceDirectiveType(TypedDict):
 class Traces(TypedDict):
     x: List[str|int|float]
     y: List[str|int|float]
-    text: List[str|int|float]
+    text: List[str|int|float] | None
     name: str
     type:str|None
     
@@ -158,11 +159,16 @@ def get_data(database:str,
              ) -> GetDataType:
     connected_db = MySQLConnector(database_name=database)
     data:pd.DataFrame = connected_db.execute_query(query)
+
     return {
         "data": json_safe_records(data),
         "traces": create_traces(data=data, trace_directives=trace_directives),
         "layout":create_layout(data=data, trace_directives=trace_directives)
         }
+
+
+    
+    
 
 if __name__ == '__main__':
     print(get_dashboards(database="employees", id="6af99eab2c69011f4df42fd7"))

@@ -14,33 +14,36 @@ never into a tool result, so the planning model sees only a masked status.
 """
 
 import asyncio
-import json
 import os
 import traceback
 from datetime import datetime
-from typing import Any, Dict
+from typing import *
 
 import pandas as pd
 from dotenv import load_dotenv
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import SamplingMessage, TextContent
 
-import dashboard as dash
 from chat_logger import get_logger
-from document_search import search_similar
-from document_update import update_metadata
+
 from mysql_connectivity import MySQLConnector
-from vector_store import store_embedding
+
+
+
+
+class GetDashboardDataType(TypedDict):
+    data:List[Dict[str, int|float|str]]
+    plotly_directive:str
 
 load_dotenv(override=True)
 logger = get_logger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ORCHESTRATOR_FLOW_MMD = os.environ.get("ORCHESTRATOR_FLOW_MMD", "orchestrator_flow_plotly.mmd")
+ORCHESTRATOR_FLOW_MMD = "orchestrator_flow_mcp.mmd"
 
 mcp = FastMCP(
     "demo-http",
-    host="127.0.0.1",      # use 127.0.0.1 for local-only
+    host="0.0.0.0",      # use 127.0.0.1 for local-only
     port=8000,
     stateless_http=True, # no per-session state; easier to scale/deploy
     json_response=True,  # plain JSON replies instead of SSE streams
@@ -148,102 +151,6 @@ async def simplify_query(query: str, schema: str, ctx: Context) -> str:
         system_prompt=open_prompt_file("system_prompts/simplify_query.md"),
         user_prompt=open_prompt_file("user_prompts/simplify_query.md", query=query, schema=schema),
         temperature=0.8,
-    )
-
-
-@mcp.tool()
-def store_user_task(task: str, query: str, database: str) -> Dict[str, str]:
-    """Vectorizes and stores the user task and its SQL, so a similar question can reuse the SQL later.
-    **Must run after simplify_query produces a SQL query to store.
-    """
-    mongo_task_id = store_embedding(text=task, metadata={"query": query, "database": database})
-    return {"mongodb_object_id": str(mongo_task_id)}
-
-
-@mcp.tool()
-def get_similar_tasks(task: str, database: str) -> Any:
-    """Searches earlier user tasks for a similar one and returns the SQL it used.
-    **Must run before simplify_query so the SQL is not generated again for a task that was already answered.
-    """
-    results = search_similar(query=task, database=database)
-    return json.loads(json.dumps(results, default=str))
-
-
-@mcp.tool()
-async def generate_plotly_vizualizer_code(query: str, task: str, ctx: Context) -> Dict[str, str]:
-    """Generates Plotly chart code and a one-line dashboard description for a SQL query.
-    Uses the client's LLM through sampling.
-    """
-    plotly_code = await ask_client_llm(
-        ctx,
-        system_prompt=open_prompt_file("system_prompts/generate_plotly_vizualizer_code.md"),
-        user_prompt=open_prompt_file("user_prompts/generate_plotly_vizualizer_code.md", query=query, task=task),
-        temperature=0,
-    )
-    dashboard_description = await ask_client_llm(
-        ctx,
-        system_prompt=open_prompt_file("system_prompts/generate_plotly_vizualizer_code_description.md"),
-        user_prompt=open_prompt_file("user_prompts/generate_plotly_vizualizer_code_description.md", query=query),
-        temperature=0,
-    )
-    return {"plotly_code": plotly_code, "dashboard_description": dashboard_description}
-
-
-@mcp.tool()
-def put_plotly_code_in_metadata(mongodb_object_id: str, plotly_code: str, dashboard_description: str) -> Dict[str, int]:
-    """Saves the Plotly code and dashboard description on the stored task with the given mongodb_object_id."""
-    result = update_metadata(
-        object_id=mongodb_object_id,
-        metadata={
-            "plotly_code": plotly_code,
-            "dashboard_description": dashboard_description,
-            "update_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        },
-    )
-    return {"matched": result.matched_count, "modified": result.modified_count}
-
-
-# --------------------------------------------------------------------------- #
-# Dashboard tools (converted from the Flask /api/* routes in app.py).
-# --------------------------------------------------------------------------- #
-
-@mcp.tool()
-def get_dashboards(database: str, id: str | None = None) -> Any:
-    """Lists the saved dashboards for a database. Pass id to get a single dashboard."""
-    return json.loads(json.dumps(dash.get_dashboards(database, id), default=str))
-
-
-@mcp.tool()
-async def get_dashboard_data(database: str, query: str, plotly_code: str, ctx: Context) -> Dict[str, str]:
-    """Runs a dashboard's SQL and builds its chart data.
-    The rows and chart data are shown to the user only. The planner receives a masked status.
-    """
-    data = await asyncio.to_thread(dash.get_data, database=database, query=query, trace_directives=plotly_code)
-    await emit(ctx, "DashboardDataMessage", "get_dashboard_data", data)
-    return {"status": "Request Completed. Dashboard data sent to the UI and masked for privacy reasons"}
-
-
-@mcp.tool()
-def delete_dashboard(database: str, dashboard_id: str) -> Dict[str, int]:
-    """Deletes a saved dashboard. The dashboard must belong to the given database."""
-    deleted = dash.delete_dashboard(database, dashboard_id)
-    if deleted == 0:
-        raise ValueError("dashboard not found")
-    return {"deleted": deleted}
-
-
-@mcp.tool()
-async def try_dashboard_regeneration(mongodb_object_id: str, query: str, task: str, ctx: Context,
-                                     extra_instruction: str = "") -> Dict[str, int]:
-    """Regenerates a dashboard's Plotly code and description using the client's LLM (sampling),
-    then saves them on the dashboard. extra_instruction is optional, for example 'use a bar chart'.
-    """
-    task_text = f"{task}\n{extra_instruction}" if extra_instruction else task
-    generated = await generate_plotly_vizualizer_code(query=query, task=task_text, ctx=ctx)
-    return put_plotly_code_in_metadata(
-        mongodb_object_id=mongodb_object_id,
-        plotly_code=generated["plotly_code"],
-        dashboard_description=generated["dashboard_description"],
     )
 
 # --------------------------------------------------------------------------- #

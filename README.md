@@ -320,7 +320,7 @@ The server binds to `0.0.0.0` by default, so it is reachable from other machines
   "mcpServers": {
     "demo-http": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "http://127.0.0.1:9000/api/mcp"]
+      "args": ["-y", "mcp-remote", "http://127.0.0.1:8000/mcp"]
     }
   }
 }

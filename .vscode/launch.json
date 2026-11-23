@@ -44,6 +44,14 @@
             "program": "${workspaceFolder}/employee_agentic_chatbot_mcp.py",
             "console": "integratedTerminal",
             "python": "C:\\Users\\sandi\\python_venvs\\python313\\Scripts\\python.exe",            
+        },
+        {
+            "name": "Python Debugger: Agensi.io",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/data-extractor-agent\\scripts\\run.py",
+            "console": "integratedTerminal",
+            "python": "C:\\Users\\sandi\\python_venvs\\python313\\Scripts\\python.exe",            
         }
     ]
 }

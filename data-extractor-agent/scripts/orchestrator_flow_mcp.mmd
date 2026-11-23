@@ -1,0 +1,12 @@
+flowchart TD
+    subgraph DataExtractor
+        DE1["simplify_query"]
+        DE2["query_runner"]
+        DE1 --> |query|DE2
+  
+    end
+    
+    A["user_task"] --> B["get_database_schema"]
+    B --> |schema|DE1
+    A --> |task|DE1
+    
